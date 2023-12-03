@@ -1,25 +1,24 @@
-# Day 3
+# day03
 
-Bez paralelizace though xd
-
-| popis      | velikost | řádků | silver    | gold        | download                       |    CCM [ms] |        WCM [ms] |
-| ---------- | -------- | ----- | --------- | ----------- | ------------------------------ | ----------: | --------------: |
-| originální | 20k      | 140   | 525119    | 76504829    | -                              |   9.2 ± 0.3 | 0.8415 ± 0.0925 |
-| bigboy     | 25M      | 5000  | 258006204 | 17158526595 | [zde](https://0x0.st/Hxtu.txt) | 108.5 ± 1.0 |      95.4 ± 0.9 |
+| description | download                        | CRC32    | size    | lines | silver    | gold        | CCM [ms]      | WCM [ms]     |
+| ----------- | ------------------------------- | -------- | ------- | ----- | --------- | ----------- | ------------- | ------------ |
+| original    | -                               | 6E270CBB | 19.3KiB | 140   | 525119    | 76504829    | 9.17 ± 0.19   | 0.84 ± 0.10  |
+| bigboy.txt  | [here](https://0x0.st/Hxtu.txt) | 4B514B9F | 23.8MiB | 5k    | 258006204 | 17158526595 | 109.89 ± 1.33 | 93.76 ± 1.86 |
 
 - CCM = Cold-Cache Mean
 - WCM = Warm-Cache Mean
 
-## Benchmarky
+## Benchmarks
 
-Cold-cache
+hyperfine 1.18.0
+
+Cold-cache:
 
 ```bash
-sudo -v
 hyperfine --input input.txt --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' ./solution
 ```
 
-Warm-cache
+Warm-cache:
 
 ```bash
 hyperfine --input input.txt -N -w 5 ./solution
