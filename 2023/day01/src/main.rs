@@ -1,4 +1,4 @@
-use aho_corasick::AhoCorasick;
+use aho_corasick::{AhoCorasick, Match};
 use anyhow::Result;
 
 const PATTERNS: &[&str; 18] = &[
@@ -17,17 +17,26 @@ where
     return None;
 }
 
+fn get_num<P>(ac: &AhoCorasick, haystack: &str, predicate: P) -> usize
+where
+    P: FnMut(&Match) -> bool,
+{
+    let (first, last) = first_last(ac.find_overlapping_iter(haystack).filter(predicate)).unwrap();
+    let first = (first.pattern().as_usize() % 9) + 1;
+    let last = (last.pattern().as_usize() % 9) + 1;
+    first * 10 + last
+}
+
 fn main() -> Result<()> {
     let ac = AhoCorasick::new(PATTERNS)?;
-    let mut sum = 0usize;
+    let mut gold = 0usize;
+    let mut silver = 0usize;
     for line in std::io::stdin().lines() {
-        let l = line?;
-        let (first, last) = first_last(ac.find_overlapping_iter(&l)).unwrap();
-        let first = (first.pattern().as_usize() % 9) + 1;
-        let last = (last.pattern().as_usize() % 9) + 1;
-        let num: usize = first * 10 + last;
-        sum += num;
+        let line = line?;
+        gold += get_num(&ac, &line, |_| true);
+        silver += get_num(&ac, &line, |m| m.pattern().as_usize() <= 8);
     }
-    println!("{}", sum);
+    println!("silver: {}", silver);
+    println!("gold: {}", gold);
     Ok(())
 }
