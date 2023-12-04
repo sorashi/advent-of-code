@@ -1,11 +1,10 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, io::stdin};
 
 use anyhow::Result;
 
-fn main() -> Result<()> {
+fn silver(lines: &Vec<String>) -> u64 {
     let mut silver = 0u64;
-    for line in std::io::stdin().lines() {
-        let line = line?;
+    for line in lines {
         let colon = line.find(':').unwrap();
         let pipe = line.find('|').unwrap();
         let winning: HashSet<_> = line[colon + 1..pipe]
@@ -26,6 +25,11 @@ fn main() -> Result<()> {
         }
         silver += local_silver;
     }
-    println!("silver: {}", silver);
+    silver
+}
+
+fn main() -> Result<()> {
+    let lines = stdin().lines().map(|l|l.unwrap()).collect();
+    println!("silver: {}", silver(&lines));
     Ok(())
 }
