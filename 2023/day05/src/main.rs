@@ -54,6 +54,14 @@ fn parse_map() -> Option<Map> {
     return Some(map);
 }
 
+fn transform_seed(seed: usize, maps: &Vec<Map>) -> usize {
+    let mut current = seed;
+    for map in maps {
+        current = map.transform(current);
+    }
+    current
+}
+
 fn main() {
     let mut seeds = String::new();
     stdin().read_line(&mut seeds).unwrap();
@@ -71,15 +79,17 @@ fn main() {
     }
 
     let mut silver = usize::MAX;
-    for seed in seeds {
-        eprint!("seed: {}", seed);
-        let mut current = seed;
-        for map in &maps {
-            current = map.transform(current);
-            eprint!(" -> {}", current);
+    let mut gold = usize::MAX;
+    for slice in seeds.chunks(2) {
+        let [seed_start, length] = *slice else {
+            unreachable!()
+        };
+        silver = std::cmp::min(silver, transform_seed(seed_start, &maps));
+        silver = std::cmp::min(silver, transform_seed(length, &maps));
+        for seed in seed_start..(seed_start + length) {
+            gold = std::cmp::min(gold, transform_seed(seed, &maps));
         }
-        eprintln!();
-        silver = std::cmp::min(silver, current);
     }
     println!("silver: {}", silver);
+    println!("gold: {}", gold);
 }
