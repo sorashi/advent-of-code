@@ -1,21 +1,22 @@
 #![feature(fn_traits)]
 
 use std::{cmp::Ordering, collections::HashMap, io::stdin};
+use std::iter::Iterator;
 
 type N = usize;
 
-const CARD_VALUES_GOLD: [char; 13] = [
-    'A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J',
-];
-const CARD_VALUES_SILVER: [char; 13] = [
-    'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
-];
+const CARD_VALUES_GOLD: &[u8] = "AKQT98765432J".as_bytes();
+const CARD_VALUES_SILVER: &[u8] = "AKQJT98765432".as_bytes();
+
+enum TaskVariant {
+    Silver,
+    Gold,
+}
 
 struct Hand {
     hand: String,
     bid: N,
-    ranking_function: fn(&Self) -> HandType,
-    card_values: &'static [char],
+    variant: TaskVariant,
 }
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Debug)]
@@ -45,15 +46,19 @@ impl PartialOrd for Hand {
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> Ordering {
-        match &self.ranking_function.call((self, )).cmp(&other.ranking_function.call((&other, ))) {
+        let (ordering, card_values) = match &self.variant {
+            TaskVariant::Silver => (self.get_rank_silver().cmp(&other.get_rank_silver()), CARD_VALUES_SILVER),
+            TaskVariant::Gold => (self.get_rank_gold().cmp(&other.get_rank_gold()), CARD_VALUES_GOLD)
+        };
+        match ordering {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
             Ordering::Equal => {
                 for i in 0..5 {
-                    let a = &self.hand[i..i + 1].chars().next().unwrap();
-                    let b = &other.hand[i..i + 1].chars().next().unwrap();
-                    let a = self.card_values.iter().position(|x| x == a).unwrap();
-                    let b = other.card_values.iter().position(|x| x == b).unwrap();
+                    let a = &self.hand.as_bytes()[i];
+                    let b = &other.hand.as_bytes()[i];
+                    let a = card_values.iter().position(|x| x == a).unwrap();
+                    let b = card_values.iter().position(|x| x == b).unwrap();
                     if a == b {
                         continue;
                     }
@@ -107,7 +112,7 @@ impl Hand {
     }
 }
 
-fn get_total_winnings(hands: &mut Vec<Hand>) -> N {
+fn get_total_winnings(hands: &mut [Hand]) -> N {
     hands.sort_unstable();
     let mut winnings = 0;
     for (idx, hand) in hands.iter().enumerate() {
@@ -124,7 +129,7 @@ fn main() {
             let spl: Vec<_> = l.split(' ').collect();
             let hand = spl[0].to_string();
             let bid = spl[1].parse::<N>().unwrap();
-            Hand { hand, bid, ranking_function: Hand::get_rank_silver, card_values: &CARD_VALUES_SILVER }
+            Hand { hand, bid, variant: TaskVariant::Silver }
         })
         .collect();
 
@@ -132,8 +137,7 @@ fn main() {
     println!("silver: {}", silver);
 
     for hand in &mut hands {
-        hand.ranking_function = Hand::get_rank_gold;
-        hand.card_values = &CARD_VALUES_GOLD;
+        hand.variant = TaskVariant::Gold;
     }
 
     let gold = get_total_winnings(&mut hands);
