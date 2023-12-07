@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashMap, io::stdin};
 type n = usize;
 
 const CARD_VALUES: [char; 13] = [
-    'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
+    'A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J',
 ];
 
 struct Hand {
@@ -64,8 +64,17 @@ impl Hand {
         for c in self.hand.chars() {
             *frequencies.entry(c).or_insert(0) += 1;
         }
+        let jfreq = if let Some(jentry) = frequencies.remove_entry(&'J') {
+            jentry.1
+        } else {
+            0
+        };
         let mut values: Vec<_> = frequencies.into_values().collect();
         values.sort();
+        match values[..].last_mut() {
+            Some(val) => *val += jfreq,
+            None => values.push(5),
+        }
         match values.as_slice() {
             [1, 1, 1, 1, 1] => HandType::HighCard,
             [1, 1, 1, 2] => HandType::OnePair,
