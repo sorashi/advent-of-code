@@ -108,7 +108,7 @@ impl Hand {
 }
 
 fn get_total_winnings(hands: &mut Vec<Hand>) -> N {
-    hands.sort();
+    hands.sort_unstable();
     let mut winnings = 0;
     for (idx, hand) in hands.iter().enumerate() {
         winnings += (idx + 1) * hand.bid;
@@ -127,7 +127,7 @@ fn main() {
             Hand { hand, bid, ranking_function: Hand::get_rank_silver, card_values: &CARD_VALUES_SILVER }
         })
         .collect();
-    hands.sort();
+
     let silver = get_total_winnings(&mut hands);
     println!("silver: {}", silver);
 
