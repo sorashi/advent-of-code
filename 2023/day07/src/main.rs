@@ -113,7 +113,7 @@ impl Hand {
 }
 
 fn get_total_winnings(hands: &mut [Hand]) -> N {
-    hands.sort_unstable();
+    hands.sort();
     let mut winnings = 0;
     for (idx, hand) in hands.iter().enumerate() {
         winnings += (idx + 1) * hand.bid;
