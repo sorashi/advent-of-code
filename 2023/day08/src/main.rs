@@ -3,9 +3,29 @@ use std::io::stdin;
 use regex::Regex;
 use num::integer::lcm;
 
+type N = u128;
+
 struct Crossroad {
     left: String,
     right: String,
+}
+
+fn get_step_count(from: &str, ending_predicate: impl Fn(&str) -> bool, map: &HashMap<String, Crossroad>, instructions: &str) -> N {
+    let mut current = from;
+    let mut steps: N = 0;
+    for instruction in instructions.as_bytes().iter().map(|x| *x as char).cycle() {
+        let crossroad = map.get(current).unwrap();
+        current = match instruction {
+            'L' => &crossroad.left,
+            'R' => &crossroad.right,
+            _ => panic!()
+        };
+        steps += 1;
+        if ending_predicate(current) {
+            break;
+        }
+    }
+    steps
 }
 
 fn main() {
@@ -23,30 +43,8 @@ fn main() {
         let right = cap["right"].to_string();
         map.insert(from, Crossroad { left, right });
     }
-    let mut currents: Vec<_> = map.keys().filter(|x| x.ends_with('A')).map(|x| x.to_string()).collect();
-    let mut steps = vec![0; currents.len()];
-    let mut silver = 0u128;
-    for i in 0..currents.len() {
-        let mut instruction = 0;
-        loop {
-            instruction %= instructions.len();
-
-            let inst_char = instructions.as_bytes()[instruction] as char;
-            let current = &currents[i];
-            let crossroads = map.get(current).unwrap();
-            currents[i] = match inst_char {
-                'L' => crossroads.left.to_string(),
-                'R' => crossroads.right.to_string(),
-                _ => panic!(),
-            };
-            steps[i] += 1;
-            if currents[i].ends_with('Z') {
-                break;
-            }
-            instruction += 1;
-        }
-    }
-    eprintln!("{:?}", steps);
-    silver = steps.into_iter().reduce(|a, c| lcm(a, c)).unwrap();
+    let silver = get_step_count("AAA", |x| x == "ZZZ", &map, &instructions);
+    let gold = map.keys().filter(|x| x.ends_with('A')).map(|x| get_step_count(x, |x| x.ends_with('Z'), &map, &instructions)).reduce(|a, c| lcm(a, c)).unwrap();
     println!("silver: {}", silver);
+    println!("gold: {}", gold);
 }
