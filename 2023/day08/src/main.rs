@@ -2,7 +2,10 @@ use hashbrown::HashMap;
 use num::integer::lcm;
 use std::io::{stdin, Read};
 
-type N = u128;
+type N = u64;
+
+const L: u8 = 'L' as u8;
+const R: u8 = 'R' as u8;
 
 struct Crossroad {
     left: u32,
@@ -17,11 +20,11 @@ fn get_step_count(
 ) -> N {
     let mut current = from;
     let mut steps: N = 0;
-    for instruction in instructions.as_bytes().iter().map(|x| *x as char).cycle() {
+    for instruction in instructions.bytes().cycle() {
         let crossroad = map.get(&current).unwrap();
         current = match instruction {
-            'L' => crossroad.left,
-            'R' => crossroad.right,
+            L => crossroad.left,
+            R => crossroad.right,
             _ => panic!(),
         };
         steps += 1;
