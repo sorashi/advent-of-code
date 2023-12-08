@@ -1,5 +1,5 @@
 use num::integer::lcm;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use std::io::{stdin, Read};
 
 type N = u64;
