@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::stdin;
 use regex::Regex;
+use num::integer::lcm;
 
 struct Crossroad {
     left: String,
@@ -22,14 +23,15 @@ fn main() {
         let right = cap["right"].to_string();
         map.insert(from, Crossroad { left, right });
     }
-    let mut instruction = 0;
-    let mut currents: Vec<_> = map.keys().filter(|x|x.ends_with('A')).map(|x|x.to_string()).collect();
-    let mut silver = 0;
-    loop {
-        instruction %= instructions.len();
+    let mut currents: Vec<_> = map.keys().filter(|x| x.ends_with('A')).map(|x| x.to_string()).collect();
+    let mut steps = vec![0; currents.len()];
+    let mut silver = 0u128;
+    for i in 0..currents.len() {
+        let mut instruction = 0;
+        loop {
+            instruction %= instructions.len();
 
-        let inst_char = instructions.as_bytes()[instruction] as char;
-        for i in 0..currents.len() {
+            let inst_char = instructions.as_bytes()[instruction] as char;
             let current = &currents[i];
             let crossroads = map.get(current).unwrap();
             currents[i] = match inst_char {
@@ -37,14 +39,14 @@ fn main() {
                 'R' => crossroads.right.to_string(),
                 _ => panic!(),
             };
+            steps[i] += 1;
+            if currents[i].ends_with('Z') {
+                break;
+            }
+            instruction += 1;
         }
-        silver += 1;
-
-        if currents.iter().all(|x|x.ends_with('Z')) {
-            break;
-        }
-
-        instruction += 1;
     }
+    eprintln!("{:?}", steps);
+    silver = steps.into_iter().reduce(|a, c| lcm(a, c)).unwrap();
     println!("silver: {}", silver);
 }
