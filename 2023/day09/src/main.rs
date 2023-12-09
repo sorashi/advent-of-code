@@ -4,6 +4,7 @@ type N = i64;
 
 fn main() {
     let mut silver: N = 0;
+    let mut gold: N = 0;
     for line in stdin().lines() {
         let line = line.unwrap();
         let nums: Vec<N> = line.split(' ').map(|x| x.parse().unwrap()).collect();
@@ -22,11 +23,15 @@ fn main() {
             }
             numnums.push(diffs);
         }
-        let mut current = 0;
+        let mut current_silver = 0;
+        let mut current_gold = 0;
         for i in (0..numnums.len() - 1).rev() {
-            current += numnums[i].last().unwrap();
+            current_silver += numnums[i].last().unwrap();
+            current_gold = numnums[i][0] - current_gold;
         }
-        silver += current;
+        silver += current_silver;
+        gold += current_gold;
     }
-    println!("{:?}", silver);
+    println!("silver: {:?}", silver);
+    println!("gold: {:?}", gold);
 }
