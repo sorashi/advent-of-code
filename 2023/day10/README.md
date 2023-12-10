@@ -7,6 +7,9 @@
 - CCM = Cold-Cache Mean
 - WCM = Warm-Cache Mean
 
+[bigboy.txt](https://files.catbox.moe/hsq72a.txt) (silver: 5016002, gold: 5000000) won't halt after 17+ minutes.
+The solution is dirty and may not even be generally correct.
+
 ## Benchmarks
 
 hyperfine 1.18.0
