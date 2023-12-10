@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 use std::convert::Into;
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 use std::ops::Add;
 
 const VERTICAL: u8 = '|' as u8;
@@ -26,20 +26,26 @@ impl Position {
     const RIGHT: Position = Position { x: 1, y: 0 };
     const UP: Position = Position { x: 0, y: -1 };
     const DOWN: Position = Position { x: 0, y: 1 };
-    fn access<T, U>(&self, map: &[U]) -> Option<T> where T: Copy, U: AsRef<[T]> {
-        map.get(self.y as usize).and_then(|row| row.as_ref().get(self.x as usize).copied())
+    fn access<T, U>(&self, map: &[U]) -> Option<T>
+    where
+        T: Copy,
+        U: AsRef<[T]>,
+    {
+        map.get(self.y as usize)
+            .and_then(|row| row.as_ref().get(self.x as usize).copied())
     }
-    fn access_mut<'a, T>(&self, map: &'a mut Vec<Vec<T>>) -> Option<&'a mut T> where T: Copy {
-        map.get_mut(self.y as usize).and_then(|row| row.get_mut(self.x as usize))
+    fn access_mut<'a, T>(&self, map: &'a mut Vec<Vec<T>>) -> Option<&'a mut T>
+    where
+        T: Copy,
+    {
+        map.get_mut(self.y as usize)
+            .and_then(|row| row.get_mut(self.x as usize))
     }
 }
 
 impl From<(N, N)> for Position {
     fn from((x, y): (N, N)) -> Self {
-        Position {
-            x,
-            y,
-        }
+        Position { x, y }
     }
 }
 
@@ -125,54 +131,53 @@ fn main() {
             NORTH_WEST => vec![Position::UP, Position::LEFT],
             SOUTH_EAST => vec![Position::DOWN, Position::RIGHT],
             SOUTH_WEST => vec![Position::DOWN, Position::LEFT],
-            _ => { continue; }
+            _ => {
+                continue;
+            }
         };
         for direction in directions {
             let new_position = current + direction;
             if !visited.contains(&new_position) {
-                *new_position.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
+                *new_position.access_mut(&mut steps_map).unwrap() =
+                    current.access(&steps_map).unwrap() + 1;
                 visited.insert(new_position);
                 stack.push(new_position);
                 path.push(new_position);
             }
-            if let Some(pos) = new_position.access(&pipe_map) {
-                if pos == STARTING_POSITION {
-                    println!("starting pos: {}", current.access(&steps_map).unwrap());
-                }
-            }
         }
     }
-    let silver = steps_map.iter().map(|x| x.iter().max().unwrap()).max().unwrap();
-    for row in &steps_map {
-        for steps in row {
-            eprint!("{: >2} ", steps);
-        }
-        eprintln!();
-    }
+    let silver = steps_map
+        .iter()
+        .map(|x| x.iter().max().unwrap())
+        .max()
+        .unwrap();
 
     let mut gold = 0;
     let height = pipe_map.len();
     let width = pipe_map[0].len();
-    let top_left = *path.iter().min_by(|a, b|
-        match a.x.cmp(&b.x) {
-            Ordering::Equal => a.y.cmp(&b.y),
-            ord => ord
-        }
-    ).unwrap();
-    let bottom_right = *path.iter().max_by(|a, b|
-        match a.x.cmp(&b.x) {
+    let top_left = *path
+        .iter()
+        .min_by(|a, b| match a.x.cmp(&b.x) {
             Ordering::Equal => a.y.cmp(&b.y),
             ord => ord,
-        }
-    ).unwrap();
+        })
+        .unwrap();
+    let bottom_right = *path
+        .iter()
+        .max_by(|a, b| match a.x.cmp(&b.x) {
+            Ordering::Equal => a.y.cmp(&b.y),
+            ord => ord,
+        })
+        .unwrap();
 
-    eprintln!("topleft={:?}, bottomright={:?}", top_left, bottom_right);
-    eprintln!("gold --------");
     for j in 0..height {
         let mut outside = true;
         let mut last_changer: Option<u8> = None;
         for i in 0..width {
-            let current = Position { x: i as N, y: j as N };
+            let current = Position {
+                x: i as N,
+                y: j as N,
+            };
             let current_pipe = current.access(&pipe_map).unwrap();
             if path.contains(&current) {
                 match current_pipe {
@@ -183,10 +188,10 @@ fn main() {
                     NORTH_EAST | NORTH_WEST | SOUTH_EAST | SOUTH_WEST => {
                         if let Some(last) = last_changer {
                             match (last, current_pipe) {
-                                (NORTH_WEST, SOUTH_EAST) => { outside = !outside }
-                                (SOUTH_EAST, NORTH_WEST) => { outside = !outside }
-                                (NORTH_EAST, SOUTH_WEST) => { outside = !outside }
-                                (SOUTH_WEST, NORTH_EAST) => { outside = !outside }
+                                (NORTH_WEST, SOUTH_EAST) => outside = !outside,
+                                (SOUTH_EAST, NORTH_WEST) => outside = !outside,
+                                (NORTH_EAST, SOUTH_WEST) => outside = !outside,
+                                (SOUTH_WEST, NORTH_EAST) => outside = !outside,
                                 _ => {}
                             }
                             last_changer = None
@@ -196,15 +201,10 @@ fn main() {
                     }
                     _ => {}
                 }
-                eprint!("{}", current_pipe as char);
-            } else {
-                if !outside {
-                    gold += 1;
-                }
-                eprint!("{}", if outside { 'O' } else { 'I' });
+            } else if !outside {
+                gold += 1;
             }
         }
-        eprintln!();
     }
     println!("silver: {}", silver / 2 + 1);
     println!("gold: {}", gold);
