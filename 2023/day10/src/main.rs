@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashSet, VecDeque};
 use std::convert::Into;
 use std::io::{Read, stdin};
@@ -14,7 +15,7 @@ const STARTING_POSITION: u8 = 'S' as u8;
 
 type N = isize;
 
-#[derive(Hash, Eq, PartialEq, Copy, Clone)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 struct Position {
     x: N,
     y: N,
@@ -81,78 +82,64 @@ fn main() {
     let mut visited = HashSet::new();
     visited.insert(start);
     let mut stack = Vec::new();
-    stack.push(start);
     let mut steps_map: Vec<Vec<isize>> = vec![vec![-1; pipe_map[0].len()]; pipe_map.len()];
+    let mut path = vec![];
     *start.access_mut(&mut steps_map).unwrap() = 0;
-    let current = stack.pop().unwrap();
 
-    let left = current + Position::LEFT;
-    match left.access(&pipe_map) {
-        Some(HORIZONTAL) | Some(NORTH_EAST) | Some(SOUTH_EAST) => {
-            if !visited.contains(&left) {
-                *left.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
-                visited.insert(left);
-                stack.push(left)
-            }
+    let left = start + Position::LEFT;
+    let right = start + Position::LEFT;
+    let up = start + Position::UP;
+    let down = start + Position::DOWN;
+    if let Some(pos) = left.access(&pipe_map) {
+        if [SOUTH_EAST, NORTH_EAST, HORIZONTAL].contains(&pos) && stack.is_empty() {
+            stack.push(left);
         }
-        _ => {}
     }
-    let right = current + Position::RIGHT;
-    match right.access(&pipe_map) {
-        Some(HORIZONTAL) | Some(NORTH_WEST) | Some(SOUTH_WEST) => {
-            if !visited.contains(&right) {
-                *right.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
-                visited.insert(right);
-                stack.push(right)
-            }
+    if let Some(pos) = right.access(&pipe_map) {
+        if [SOUTH_WEST, NORTH_WEST, HORIZONTAL].contains(&pos) && stack.is_empty() {
+            stack.push(right);
         }
-        _ => {}
     }
-    let up = current + Position::UP;
-    match up.access(&pipe_map) {
-        Some(VERTICAL) | Some(NORTH_WEST) | Some(NORTH_EAST) => {
-            if !visited.contains(&up) {
-                *up.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
-                visited.insert(up);
-                stack.push(up)
-            }
+    if let Some(pos) = up.access(&pipe_map) {
+        if [NORTH_EAST, NORTH_WEST, VERTICAL].contains(&pos) && stack.is_empty() {
+            stack.push(up);
         }
-        _ => {}
     }
-    let down = current + Position::DOWN;
-    match down.access(&pipe_map) {
-        Some(VERTICAL) | Some(SOUTH_WEST) | Some(SOUTH_EAST) => {
-            if !visited.contains(&down) {
-                *down.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
-                visited.insert(down);
-                stack.push(down)
-            }
+    if let Some(pos) = down.access(&pipe_map) {
+        if [SOUTH_EAST, SOUTH_WEST, VERTICAL].contains(&pos) && stack.is_empty() {
+            stack.push(down);
         }
-        _ => {}
     }
+    let first = stack[0];
+    visited.insert(first);
+    *first.access_mut(&mut steps_map).unwrap() = 1;
+    path.push(start);
+    path.push(first);
+
     while let Some(current) = stack.pop() {
         let current_pipe = current.access(&pipe_map).unwrap();
         let directions = match current_pipe {
-            HORIZONTAL => [Position::LEFT, Position::RIGHT],
-            VERTICAL => [Position::UP, Position::DOWN],
-            NORTH_EAST => [Position::UP, Position::RIGHT],
-            NORTH_WEST => [Position::UP, Position::LEFT],
-            SOUTH_EAST => [Position::DOWN, Position::RIGHT],
-            SOUTH_WEST => [Position::DOWN, Position::LEFT],
+            HORIZONTAL => vec![Position::LEFT, Position::RIGHT],
+            VERTICAL => vec![Position::UP, Position::DOWN],
+            NORTH_EAST => vec![Position::UP, Position::RIGHT],
+            NORTH_WEST => vec![Position::UP, Position::LEFT],
+            SOUTH_EAST => vec![Position::DOWN, Position::RIGHT],
+            SOUTH_WEST => vec![Position::DOWN, Position::LEFT],
             _ => { continue; }
         };
-        let mut contains_all = true;
         for direction in directions {
             let new_position = current + direction;
             if !visited.contains(&new_position) {
                 *new_position.access_mut(&mut steps_map).unwrap() = current.access(&steps_map).unwrap() + 1;
                 visited.insert(new_position);
                 stack.push(new_position);
-                contains_all = false;
+                path.push(new_position);
             }
-        }
-        if contains_all {
-            println!("ok {}", current.access(&steps_map).unwrap());
+            if let Some(pos) = new_position.access(&pipe_map) {
+                if pos == STARTING_POSITION {
+                    println!("starting pos: {}", current.access(&steps_map).unwrap());
+                }
+            }
         }
     }
     let silver = steps_map.iter().map(|x| x.iter().max().unwrap()).max().unwrap();
@@ -162,5 +149,63 @@ fn main() {
         }
         eprintln!();
     }
-    println!("silver: {}", silver / 2 +1);
+
+    let mut gold = 0;
+    let height = pipe_map.len();
+    let width = pipe_map[0].len();
+    let top_left = *path.iter().min_by(|a, b|
+        match a.x.cmp(&b.x) {
+            Ordering::Equal => a.y.cmp(&b.y),
+            ord => ord
+        }
+    ).unwrap();
+    let bottom_right = *path.iter().max_by(|a, b|
+        match a.x.cmp(&b.x) {
+            Ordering::Equal => a.y.cmp(&b.y),
+            ord => ord,
+        }
+    ).unwrap();
+
+    eprintln!("topleft={:?}, bottomright={:?}", top_left, bottom_right);
+    eprintln!("gold --------");
+    for j in 0..height {
+        let mut outside = true;
+        let mut last_changer: Option<u8> = None;
+        for i in 0..width {
+            let current = Position { x: i as N, y: j as N };
+            let current_pipe = current.access(&pipe_map).unwrap();
+            if path.contains(&current) {
+                match current_pipe {
+                    VERTICAL => {
+                        outside = !outside;
+                        last_changer = None;
+                    }
+                    NORTH_EAST | NORTH_WEST | SOUTH_EAST | SOUTH_WEST => {
+                        if let Some(last) = last_changer {
+                            match (last, current_pipe) {
+                                (NORTH_WEST, SOUTH_EAST) => { outside = !outside }
+                                (SOUTH_EAST, NORTH_WEST) => { outside = !outside }
+                                (NORTH_EAST, SOUTH_WEST) => { outside = !outside }
+                                (SOUTH_WEST, NORTH_EAST) => { outside = !outside }
+                                _ => {}
+                            }
+                            last_changer = None
+                        } else {
+                            last_changer = Some(current_pipe);
+                        }
+                    }
+                    _ => {}
+                }
+                eprint!("{}", current_pipe as char);
+            } else {
+                if !outside {
+                    gold += 1;
+                }
+                eprint!("{}", if outside { 'O' } else { 'I' });
+            }
+        }
+        eprintln!();
+    }
+    println!("silver: {}", silver / 2 + 1);
+    println!("gold: {}", gold);
 }
