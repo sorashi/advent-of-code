@@ -8,6 +8,9 @@
 - CCM = Cold-Cache Mean
 - WCM = Warm-Cache Mean
 
+The bigboy is small (1600 galaxies) and does not reflect the fact that this solution is not at all optimal.
+Another bigboy: https://files.catbox.moe/admr52.txt
+
 ## Benchmarks
 
 hyperfine 1.18.0
