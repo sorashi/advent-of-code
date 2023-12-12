@@ -36,40 +36,44 @@ fn rank_sequence(s: &[u8]) -> Vec<N> {
     ranking
 }
 
+fn count_possibilities(spring_conditions: &[u8], groups: &[N]) -> usize {
+    let mut all_possibilities = match spring_conditions[0] {
+        b'.' => vec![".".to_string()],
+        b'#' => vec!["#".to_string()],
+        b'?' => vec![".".to_string(), "#".to_string()],
+        _ => panic!(),
+    };
+    for &c in &spring_conditions[1..] {
+        for i in 0..all_possibilities.len() {
+            match c {
+                b'.' => all_possibilities[i].push('.'),
+                b'#' => all_possibilities[i].push('#'),
+                b'?' => {
+                    let j = all_possibilities.len();
+                    all_possibilities.push(all_possibilities[i].clone());
+                    all_possibilities[i].push('#');
+                    all_possibilities[j].push('.');
+                }
+                _ => panic!(),
+            }
+        }
+    }
+    all_possibilities
+        .iter()
+        .filter(|x| rank_sequence(x.as_bytes()) == groups)
+        .count()
+}
+
 fn main() {
     let mut silver = 0;
     for line in stdin().lines() {
         let line = line.unwrap();
-        let (map_row, groups) = line.split_once(' ').unwrap();
+        let (spring_conditions, groups) = line.split_once(' ').unwrap();
         let groups: Vec<N> = groups.split(',').map(|x| x.parse().unwrap()).collect();
-        let map_row = map_row.as_bytes();
+        let spring_conditions = spring_conditions.as_bytes();
         // let mut dp = vec![vec![0; groups.len() + 1]; map_row.len() + 1];
 
-        let mut all_possibilites = match map_row[0] {
-            b'.' => vec![".".to_string()],
-            b'#' => vec!["#".to_string()],
-            b'?' => vec![".".to_string(), "#".to_string()],
-            _ => panic!(),
-        };
-        for &c in &map_row[1..] {
-            for i in 0..all_possibilites.len() {
-                match c {
-                    b'.' => all_possibilites[i].push('.'),
-                    b'#' => all_possibilites[i].push('#'),
-                    b'?' => {
-                        let j = all_possibilites.len();
-                        all_possibilites.push(all_possibilites[i].clone());
-                        all_possibilites[i].push('#');
-                        all_possibilites[j].push('.');
-                    }
-                    _ => panic!(),
-                }
-            }
-        }
-        silver += all_possibilites
-            .iter()
-            .filter(|x| rank_sequence(x.as_bytes()) == groups)
-            .count();
+        silver += count_possibilities(spring_conditions, &groups);
     }
     println!("{}", silver);
 }
