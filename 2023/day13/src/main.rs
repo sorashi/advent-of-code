@@ -50,6 +50,11 @@ fn get_pattern_reflections(
     (vertical_reflection_lines, horizontal_reflection_lines)
 }
 
+fn compute_answer(vertical: &[usize], horizontal: &[usize]) -> usize {
+    vertical.iter().map(|x| x + 1).sum::<usize>()
+        + horizontal.iter().map(|x| 100 * (x + 1)).sum::<usize>()
+}
+
 fn main() {
     let mut input = String::new();
     stdin().read_to_string(&mut input).unwrap();
@@ -62,16 +67,10 @@ fn main() {
             .map(|x| x.trim().as_bytes())
             .collect();
         let (vertical, horizontal) = get_pattern_reflections(&pattern);
-
         let (vertical_silver, vertical_gold) = vertical;
         let (horizontal_silver, horizontal_gold) = horizontal;
-        silver += vertical_silver.iter().map(|x| x + 1).sum::<usize>();
-        silver += horizontal_silver
-            .iter()
-            .map(|x| 100 * (x + 1))
-            .sum::<usize>();
-        gold += vertical_gold.iter().map(|x| x + 1).sum::<usize>();
-        gold += horizontal_gold.iter().map(|x| 100 * (x + 1)).sum::<usize>();
+        silver += compute_answer(&vertical_silver, &horizontal_silver);
+        gold += compute_answer(&vertical_gold, &horizontal_gold);
     }
     println!("silver: {}", silver);
     println!("gold: {}", gold);
