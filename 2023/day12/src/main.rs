@@ -1,88 +1,79 @@
 use std::io::stdin;
+use std::iter::repeat;
 
-type N = i64;
-
-fn print_dp(dp: &Vec<Vec<N>>) {
-    for j in 0..dp.len() {
-        eprint!("{:<3}", j);
-        eprintln!(
-            " {}",
-            dp[j].iter().fold("".to_string(), |mut a, c| {
-                a.push_str(&format!(" {}", c));
-                a.to_string()
-            })
-        );
-    }
-}
-
-fn rank_sequence(s: &[u8]) -> Vec<N> {
-    let mut current_sequence: N = 0;
-    let mut ranking = vec![];
-    for &c in s {
-        match c {
-            b'.' => {
-                if current_sequence != 0 {
-                    ranking.push(current_sequence);
-                    current_sequence = 0;
-                }
-            }
-            b'#' => current_sequence += 1,
-            _ => panic!(),
-        }
-    }
-    if current_sequence != 0 {
-        ranking.push(current_sequence);
-    }
-    ranking
-}
+type N = usize;
 
 fn count_possibilities(spring_conditions: &[u8], groups: &[N]) -> usize {
-    let mut all_possibilities = match spring_conditions[0] {
-        b'.' => vec![".".to_string()],
-        b'#' => vec!["#".to_string()],
-        b'?' => vec![".".to_string(), "#".to_string()],
-        _ => panic!(),
-    };
-    for &c in &spring_conditions[1..] {
-        for i in 0..all_possibilities.len() {
-            match c {
-                b'.' => all_possibilities[i].push('.'),
-                b'#' => all_possibilities[i].push('#'),
-                b'?' => {
-                    let j = all_possibilities.len();
-                    all_possibilities.push(all_possibilities[i].clone());
-                    all_possibilities[i].push('#');
-                    all_possibilities[j].push('.');
+    let max_k = *groups.iter().max().unwrap();
+    // dp[x][y][k] is the count of arrangements in spring_conditions[..=x] using only groups[..=y] while the sequence ends with a consecutive run of k #'s
+    // To avoid edge cases, we add a last group with 0 and a last char dot.
+    let mut groups = Vec::from(groups);
+    groups.push(0);
+    let mut spring_conditions = Vec::from(spring_conditions);
+    spring_conditions.push(b'.');
+
+    let mut dp = vec![vec![vec![0; max_k + 1]; groups.len()]; spring_conditions.len()];
+
+    // base cases
+    match spring_conditions[0] {
+        b'#' => dp[0][0][1] = 1,
+        b'.' => dp[0][0][0] = 1,
+        b'?' => {
+            dp[0][0][0] = 1;
+            dp[0][0][1] = 1;
+        }
+        _ => panic!()
+    }
+
+    // build the table
+    for x in 1..spring_conditions.len() {
+        let c = spring_conditions[x];
+        for y in 0..groups.len() {
+            for k in 0..=groups[y] {
+                // count for if the current char is a dot
+                let mut dot = 0;
+                if k == 0 { // dot makes sense only if current consecutive run is 0
+                    if y > 0 {
+                        dot = dp[x - 1][y - 1][groups[y - 1]] + dp[x - 1][y][0];
+                    } else if !spring_conditions[..=x].iter().any(|x| *x == b'#') {
+                        // k == 0 && y == 0, so all chars up to x must be .'s (including ?'s)
+                        // (that is the only possible arrangement)
+                        dot = 1;
+                    }
                 }
-                _ => panic!(),
+                let mut hash = 0;
+                if k != 0 {
+                    hash = dp[x - 1][y][k - 1];
+                }
+                dp[x][y][k] = match c {
+                    b'.' => dot,
+                    b'#' => hash,
+                    b'?' => dot + hash,
+                    _ => panic!(),
+                }
             }
         }
     }
-    all_possibilities
-        .iter()
-        .filter(|x| rank_sequence(x.as_bytes()) == groups)
-        .count()
+    dp[spring_conditions.len() - 1][groups.len() - 1][0]
 }
 
 fn main() {
     let mut silver = 0;
+    let mut gold = 0;
     for line in stdin().lines() {
         let line = line.unwrap();
         let (spring_conditions, groups) = line.split_once(' ').unwrap();
         let groups: Vec<N> = groups.split(',').map(|x| x.parse().unwrap()).collect();
         let spring_conditions = spring_conditions.as_bytes();
-        // let mut dp = vec![vec![0; groups.len() + 1]; map_row.len() + 1];
-
         silver += count_possibilities(spring_conditions, &groups);
+
+        let spring_conditions = repeat(spring_conditions)
+            .take(5)
+            .collect::<Vec<_>>()
+            .join(&b'?');
+        let groups: Vec<_> = repeat(groups).take(5).flatten().collect();
+        gold += count_possibilities(&spring_conditions, &groups);
     }
     println!("{}", silver);
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test1() {
-        assert_eq!(&crate::rank_sequence("###.##.#".as_bytes()), &[3, 2, 1]);
-        assert_eq!(&crate::rank_sequence("#.#.###".as_bytes()), &[1, 1, 3]);
-    }
+    println!("{}", gold);
 }
