@@ -10,7 +10,7 @@
 The solution is not optimal.
 
 Given one line of input, let the length of spring conditions be $n$ and let the groups be a sequence $G$.
-For one line this line the complexity of this solution is $\mathcal O(n |G| \max G)$.
+For one line the complexity of this solution is $\mathcal O(n |G| \max G)$.
 I've heard there exists a solution with $\mathcal O(n |G|)$.
 
 [This bigboy](https://files.catbox.moe/h3lff6.txt) takes over 3 minutes (iterating over 3 lines per second).
