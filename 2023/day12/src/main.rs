@@ -74,6 +74,6 @@ fn main() {
         let groups: Vec<_> = repeat(groups).take(5).flatten().collect();
         gold += count_possibilities(&spring_conditions, &groups);
     }
-    println!("{}", silver);
-    println!("{}", gold);
+    println!("silver: {}", silver);
+    println!("gold: {}", gold);
 }
