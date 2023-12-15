@@ -17,8 +17,8 @@ struct Lens<'k> {
 
 fn main() {
     let mut input = String::new();
-    stdin().read_to_string(&mut input).unwrap();
-    let (input, _) = input.split_once('\n').unwrap();
+    stdin().read_line(&mut input).unwrap();
+    let input = input.trim();
 
     let mut silver: u64 = 0;
     for step in input.split(',').map(|x| x.as_bytes()) {
