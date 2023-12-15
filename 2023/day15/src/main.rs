@@ -1,4 +1,4 @@
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 
 fn hash(input: &[u8]) -> u8 {
     let mut current: u8 = 0;
@@ -33,7 +33,9 @@ fn main() {
             let lens = &lens[..removal];
             let lens_bytes = lens.as_bytes();
             let hash = hash(lens_bytes);
-            let index = boxes[hash as usize].iter().position(|x: &Lens| x.label == lens);
+            let index = boxes[hash as usize]
+                .iter()
+                .position(|x: &Lens| x.label == lens);
             if let Some(index) = index {
                 boxes[hash as usize].remove(index);
             }
@@ -52,8 +54,8 @@ fn main() {
     }
 
     let mut gold = 0u64;
-    for (i, boks) in boxes.iter().enumerate() {
-        for (j, lens) in boks.iter().enumerate() {
+    for (i, the_box) in boxes.iter().enumerate() {
+        for (j, lens) in the_box.iter().enumerate() {
             let power: u64 = (i + 1) as u64 * (j + 1) as u64 * lens.value;
             gold += power;
         }
