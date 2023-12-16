@@ -1,3 +1,4 @@
+use std::arch::x86_64::_mm_minpos_epu16;
 use std::collections::HashSet;
 use std::io::{stdin, Read};
 use std::ops::{Add, AddAssign};
@@ -108,16 +109,10 @@ fn print_energized(energized: &Vec<Vec<bool>>) {
     }
 }
 
-fn main() {
-    let mut input = String::new();
-    stdin().read_to_string(&mut input).unwrap();
-    let lines: Vec<_> = input
-        .split_terminator('\n')
-        .map(|x| x.trim().as_bytes())
-        .collect();
-    let mut beams = vec![Beam::new(Vector::ZERO, Vector::RIGHT)];
-    let width = lines[0].len() as isize;
-    let height = lines.len() as isize;
+fn get_energized_tile_count(first_beam: Beam, map: &Vec<&[u8]>) -> usize {
+    let mut beams = vec![first_beam];
+    let width = map[0].len() as isize;
+    let height = map.len() as isize;
     let mut energized = vec![vec![false; width as usize]; height as usize];
     energized[0][0] = true;
     let mut visited: HashSet<DirPos> = HashSet::new();
@@ -126,7 +121,7 @@ fn main() {
         let mut new_beams = vec![];
         let mut beams_for_removal = vec![];
         for (i, beam) in beams.iter_mut().enumerate() {
-            let (new_pos, new_beam) = beam.step(&lines);
+            let (new_pos, new_beam) = beam.step(&map);
             if let Some(new_beam) = new_beam {
                 if !visited.contains(&new_beam.dir_pos) {
                     visited.insert(new_beam.dir_pos);
@@ -151,9 +146,32 @@ fn main() {
         }
         beams.extend(new_beams);
     }
-    let mut silver = 0;
+    let mut answer = 0;
     for row in energized {
-        silver += row.iter().filter(|x| **x).count();
+        answer += row.iter().filter(|x| **x).count();
     }
-    println!("silver: {}", silver);
+    answer
+}
+
+fn main() {
+    let mut input = String::new();
+    stdin().read_to_string(&mut input).unwrap();
+    let lines: Vec<_> = input
+        .split_terminator('\n')
+        .map(|x| x.trim().as_bytes())
+        .collect();
+    println!("silver: {}", get_energized_tile_count(Beam::new(Vector::ZERO, Vector::RIGHT), &lines));
+
+    let width = lines[0].len() as isize;
+    let height = lines.len() as isize;
+    let mut gold = 0;
+    for y in 0..height {
+        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x: 0, y }, Vector::RIGHT), &lines));
+        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x: width - 1, y }, Vector::LEFT), &lines));
+    }
+    for x in 0..width {
+        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x, y: 0 }, Vector::DOWN), &lines));
+        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x, y: height - 1 }, Vector::UP), &lines));
+    }
+    println!("gold: {}", gold);
 }
