@@ -1,4 +1,3 @@
-use std::arch::x86_64::_mm_minpos_epu16;
 use std::collections::HashSet;
 use std::io::{stdin, Read};
 use std::ops::{Add, AddAssign};
@@ -51,14 +50,12 @@ struct DirPos {
 }
 
 struct Beam {
-    history: Vec<DirPos>,
     dir_pos: DirPos,
 }
 
 impl Beam {
     fn new(position: Vector, direction: Vector) -> Self {
         Self {
-            history: vec![],
             dir_pos: DirPos {
                 position,
                 direction,
@@ -97,15 +94,6 @@ impl Beam {
         }
         self.dir_pos.position += self.dir_pos.direction;
         (self.dir_pos.position, new_beam)
-    }
-}
-
-fn print_energized(energized: &Vec<Vec<bool>>) {
-    for row in energized {
-        for &e in row {
-            eprint!("{}", if e { '#' } else { '.' });
-        }
-        eprintln!();
     }
 }
 
@@ -160,18 +148,33 @@ fn main() {
         .split_terminator('\n')
         .map(|x| x.trim().as_bytes())
         .collect();
-    println!("silver: {}", get_energized_tile_count(Beam::new(Vector::ZERO, Vector::RIGHT), &lines));
+    println!(
+        "silver: {}",
+        get_energized_tile_count(Beam::new(Vector::ZERO, Vector::RIGHT), &lines)
+    );
 
     let width = lines[0].len() as isize;
     let height = lines.len() as isize;
     let mut gold = 0;
     for y in 0..height {
-        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x: 0, y }, Vector::RIGHT), &lines));
-        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x: width - 1, y }, Vector::LEFT), &lines));
+        gold = gold.max(get_energized_tile_count(
+            Beam::new(Vector { x: 0, y }, Vector::RIGHT),
+            &lines,
+        ));
+        gold = gold.max(get_energized_tile_count(
+            Beam::new(Vector { x: width - 1, y }, Vector::LEFT),
+            &lines,
+        ));
     }
     for x in 0..width {
-        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x, y: 0 }, Vector::DOWN), &lines));
-        gold = gold.max(get_energized_tile_count(Beam::new(Vector { x, y: height - 1 }, Vector::UP), &lines));
+        gold = gold.max(get_energized_tile_count(
+            Beam::new(Vector { x, y: 0 }, Vector::DOWN),
+            &lines,
+        ));
+        gold = gold.max(get_energized_tile_count(
+            Beam::new(Vector { x, y: height - 1 }, Vector::UP),
+            &lines,
+        ));
     }
     println!("gold: {}", gold);
 }
