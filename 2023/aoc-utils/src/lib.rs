@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Add, AddAssign, Neg};
+use std::ops::{Add, AddAssign, Deref, Neg};
 
 #[derive(Eq, PartialEq, Clone, Copy, Hash, Debug)]
 pub struct Vector {
@@ -83,12 +83,26 @@ impl<T: Debug> Debug for TwoDimArray<T> {
     }
 }
 
-impl<T> TwoDimArray<T> {
-    pub fn new<A: Default + Clone>(width: usize, height: usize) -> TwoDimArray<A> {
+impl<T> Deref for TwoDimArray<T> {
+    type Target = [Vec<T>];
+
+    fn deref(&self) -> &Self::Target {
+        &self.array
+    }
+}
+impl<T> AsRef<[Vec<T>]> for TwoDimArray<T> {
+    fn as_ref(&self) -> &[Vec<T>] {
+        self.deref()
+    }
+}
+impl<T: Default + Clone> TwoDimArray<T> {
+    pub fn new(width: usize, height: usize) -> TwoDimArray<T> {
         TwoDimArray {
             array: vec![vec![Default::default(); width]; height],
         }
     }
+}
+impl<T> TwoDimArray<T> {
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         self.array.get(y).and_then(|row| row.get(x))
     }
@@ -133,5 +147,13 @@ mod tests {
         let v1 = Vector { x: 3, y: 1 };
         let v2 = Vector { x: 1, y: 2 };
         assert_eq!(v1 + v2, Vector { x: 4, y: 3 });
+    }
+
+    #[test]
+    fn vector_access_to_two_dim_array() {
+        let mut arr = TwoDimArray::new(10, 10);
+        arr.set(0, 0, 37).unwrap();
+        let vec = Vector::ZERO;
+        assert_eq!(vec.get(&arr), Some(&37));
     }
 }
