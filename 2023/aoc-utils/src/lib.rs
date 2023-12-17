@@ -11,7 +11,10 @@ impl Add for Vector {
     type Output = Vector;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
     }
 }
 
@@ -41,10 +44,14 @@ impl Vector {
     pub const DOWN: Vector = Vector { x: 0, y: 1 };
 
     pub fn get<'a, T, A: AsRef<[T]>>(&self, array: &'a [A]) -> Option<&'a T> {
-        array.get(self.y as usize).and_then(|row| row.as_ref().get(self.y as usize))
+        array
+            .get(self.y as usize)
+            .and_then(|row| row.as_ref().get(self.y as usize))
     }
     pub fn set<T, A: AsMut<[T]>>(&self, array: &mut [A], value: T) -> Result<(), &'static str> {
-        let element = array.get_mut(self.y as usize).and_then(|row| row.as_mut().get_mut(self.x as usize));
+        let element = array
+            .get_mut(self.y as usize)
+            .and_then(|row| row.as_mut().get_mut(self.x as usize));
         if let Some(element) = element {
             *element = value;
             Ok(())
@@ -79,15 +86,16 @@ impl<T: Debug> Debug for TwoDimArray<T> {
 impl<T> TwoDimArray<T> {
     pub fn new<A: Default + Clone>(width: usize, height: usize) -> TwoDimArray<A> {
         TwoDimArray {
-            array: vec![vec![Default::default(); width]; height]
+            array: vec![vec![Default::default(); width]; height],
         }
     }
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         self.array.get(y).and_then(|row| row.get(x))
     }
     pub fn get_by_vector(&self, position: &Vector) -> Option<&T> {
-        if !self.is_vector_in_bounds(position)
-        { None } else {
+        if !self.is_vector_in_bounds(position) {
+            None
+        } else {
             self.get(position.x as usize, position.y as usize)
         }
     }
@@ -107,7 +115,9 @@ impl<T> TwoDimArray<T> {
         self.array.len()
     }
     pub fn is_vector_in_bounds(&self, position: &Vector) -> bool {
-        position.x >= 0 && position.y >= 0 && self.is_in_bounds(position.x as usize, position.y as usize)
+        position.x >= 0
+            && position.y >= 0
+            && self.is_in_bounds(position.x as usize, position.y as usize)
     }
     pub fn is_in_bounds(&self, x: usize, y: usize) -> bool {
         x < self.width() && y < self.height()

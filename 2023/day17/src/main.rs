@@ -1,7 +1,7 @@
+use aoc_utils::{TwoDimArray, Vector};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashSet};
 use std::io::{stdin, Read};
-use aoc_utils::{TwoDimArray, Vector};
 
 #[derive(Hash, Eq, PartialEq)]
 struct CrucibleStateWithoutHeatLoss {
@@ -55,38 +55,54 @@ fn main() {
         .map(|row| row.as_bytes().iter().map(|c| c - 0x30).collect::<Vec<_>>())
         .collect::<Vec<_>>();
     let loss_map = TwoDimArray::from(loss_map);
+    let silver = get_solution(&loss_map, 0, 3);
+    let gold = get_solution(&loss_map, 4, 10);
+    println!("silver: {}", silver);
+    println!("gold: {}", gold);
+}
+
+fn get_solution(
+    loss_map: &TwoDimArray<u8>,
+    min_before_turn: usize,
+    max_before_turn: usize,
+) -> usize {
     let mut seen: HashSet<CrucibleStateWithoutHeatLoss> = HashSet::new();
     let mut pq: BinaryHeap<CrucibleState> = BinaryHeap::new();
-    let destination = Vector { x: loss_map.width() as isize - 1, y: loss_map.height() as isize - 1 };
-    let mut silver = 0;
+    let destination = Vector {
+        x: loss_map.width() as isize - 1,
+        y: loss_map.height() as isize - 1,
+    };
     let first_state = CrucibleState {
         position: Vector::ZERO,
         direction: Vector::ZERO,
         heat_loss: 0,
-        consecutive: 0
+        consecutive: 0,
     };
     pq.push(first_state);
     while let Some(current) = pq.pop() {
         let state_without_hl = CrucibleStateWithoutHeatLoss::clone_from_crucible_state(&current);
-        if current.position == destination {
-            silver = current.heat_loss;
-            break;
+        if current.position == destination && current.consecutive > min_before_turn {
+            return current.heat_loss;
         }
         if seen.contains(&state_without_hl) {
             continue;
         }
         seen.insert(state_without_hl);
-        if current.consecutive < 3 && current.direction != Vector::ZERO {
+        if current.consecutive < max_before_turn && current.direction != Vector::ZERO {
             let new_pos = current.position + current.direction;
             if loss_map.is_vector_in_bounds(&new_pos) {
                 let new_state = CrucibleState {
                     position: new_pos,
                     direction: current.direction,
-                    heat_loss: current.heat_loss + *loss_map.get_by_vector(&new_pos).unwrap() as usize,
+                    heat_loss: current.heat_loss
+                        + *loss_map.get_by_vector(&new_pos).unwrap() as usize,
                     consecutive: current.consecutive + 1,
                 };
                 pq.push(new_state);
             }
+        }
+        if current.consecutive < min_before_turn && current.direction != Vector::ZERO {
+            continue;
         }
         for dir in [Vector::LEFT, Vector::RIGHT, Vector::UP, Vector::DOWN] {
             if -dir == current.direction || dir == current.direction {
@@ -105,5 +121,5 @@ fn main() {
             pq.push(new_state);
         }
     }
-    println!("silver: {}", silver);
+    0
 }
