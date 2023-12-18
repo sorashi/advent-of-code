@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter, Write};
-use std::ops::{Add, AddAssign, Deref, Neg};
+use std::ops::{Add, AddAssign, Deref, Mul, MulAssign, Neg};
 
 #[derive(Eq, PartialEq, Clone, Copy, Hash, Debug)]
 pub struct Vector {
@@ -33,6 +33,24 @@ impl Neg for Vector {
             x: -self.x,
             y: -self.y,
         }
+    }
+}
+
+impl Mul<isize> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: isize) -> Self::Output {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs
+        }
+    }
+}
+
+impl MulAssign<isize> for Vector {
+    fn mul_assign(&mut self, rhs: isize) {
+        self.x *= rhs;
+        self.y *= rhs;
     }
 }
 
