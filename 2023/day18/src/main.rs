@@ -18,6 +18,16 @@ fn main() {
         let dir = &caps[1];
         let len: isize = (caps[2].parse::<isize>().unwrap());
         let color = &caps[3];
+
+        let correct_len = isize::from_str_radix(&color[..5], 16).unwrap();
+        let correct_dir = match &color[5..] {
+            "0" => Vector::RIGHT,
+            "1" => Vector::DOWN,
+            "2" => Vector::LEFT,
+            "3" => Vector::UP,
+            _ => panic!()
+        };
+
         let dir = match dir {
             "L" => Vector::LEFT,
             "R" => Vector::RIGHT,
@@ -26,8 +36,8 @@ fn main() {
             _ => panic!(),
         };
         dirs.push(Direction {
-            dir,
-            len,
+            dir: correct_dir,
+            len: correct_len,
             color: color.to_string(),
         });
     }
