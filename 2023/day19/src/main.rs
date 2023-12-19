@@ -17,7 +17,7 @@ enum WorkflowTarget<'a> {
     Reject,
 }
 
-fn parse_target<'a>(s: &'a str) -> WorkflowTarget<'a> {
+fn parse_target(s: &str) -> WorkflowTarget {
     match s {
         "A" => WorkflowTarget::Accept,
         "R" => WorkflowTarget::Reject,
@@ -25,7 +25,7 @@ fn parse_target<'a>(s: &'a str) -> WorkflowTarget<'a> {
     }
 }
 
-fn parse_workflow<'a>(s: &'a str) -> (&'a str, Workflow<'a>) {
+fn parse_workflow(s: &str) -> (&str, Workflow) {
     let first_brace = s.find('{').unwrap();
     let name = &s[..first_brace];
     let steps = &s[first_brace + 1..s.len() - 1];
@@ -63,7 +63,7 @@ fn parse_rating(s: &str) -> HashMap<u8, usize> {
     map
 }
 
-fn get_result(
+fn is_accepted(
     rating: &HashMap<u8, usize>,
     workflows: &HashMap<&str, Workflow>,
     current_workflow: &str,
@@ -74,7 +74,7 @@ fn get_result(
             WorkflowStep::GreaterThan(parameter, value, target) => {
                 if rating[parameter] > *value {
                     return match target {
-                        WorkflowTarget::Part(part) => get_result(rating, workflows, part),
+                        WorkflowTarget::Part(part) => is_accepted(rating, workflows, part),
                         WorkflowTarget::Accept => true,
                         WorkflowTarget::Reject => false,
                     };
@@ -83,7 +83,7 @@ fn get_result(
             WorkflowStep::LessThan(parameter, value, target) => {
                 if rating[parameter] < *value {
                     return match target {
-                        WorkflowTarget::Part(part) => get_result(rating, workflows, part),
+                        WorkflowTarget::Part(part) => is_accepted(rating, workflows, part),
                         WorkflowTarget::Accept => true,
                         WorkflowTarget::Reject => false,
                     };
@@ -91,7 +91,7 @@ fn get_result(
             }
             WorkflowStep::Target(target) => {
                 return match target {
-                    WorkflowTarget::Part(part) => get_result(rating, workflows, part),
+                    WorkflowTarget::Part(part) => is_accepted(rating, workflows, part),
                     WorkflowTarget::Accept => true,
                     WorkflowTarget::Reject => false,
                 };
@@ -114,7 +114,7 @@ fn main() {
     let mut silver = 0;
     for rating in ratings.split_terminator('\n') {
         let rating = parse_rating(rating);
-        if get_result(&rating, &workflows_map, "in") {
+        if is_accepted(&rating, &workflows_map, "in") {
             silver += rating.values().sum::<usize>();
         }
     }
