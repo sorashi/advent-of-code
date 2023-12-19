@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
 use std::io::{stdin, Read};
 
 struct Workflow<'a> {
@@ -110,12 +109,6 @@ impl Interval {
     }
     fn restrict_lte(&mut self, value: usize) {
         self.to = self.to.min(value);
-    }
-}
-
-impl Display for Interval {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("[{}, {}]", self.from, self.to))
     }
 }
 
