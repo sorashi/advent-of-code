@@ -157,7 +157,7 @@ fn get_possible_combination_count(
         if branch_intervals[parameter].any() {
             result += get_possible_combination_count(workflows, branch_intervals, target);
         }
-        if get_interval_combos(&intervals) == 0 {
+        if !intervals[parameter].any() {
             out_of_intervals = true;
             break;
         }
