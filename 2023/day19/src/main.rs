@@ -1,8 +1,6 @@
-use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::io::{stdin, Read};
-use std::panic::panic_any;
 
 struct Workflow<'a> {
     steps: Vec<WorkflowStep<'a>>,
@@ -33,7 +31,13 @@ fn parse_workflow(s: &str) -> (&str, Workflow) {
             };
             workflow_steps.push(step);
         } else {
-            return (name, Workflow { steps: workflow_steps, fallback: step });
+            return (
+                name,
+                Workflow {
+                    steps: workflow_steps,
+                    fallback: step,
+                },
+            );
         }
     }
     panic!()
@@ -88,7 +92,9 @@ impl Interval {
     fn count(&self) -> usize {
         if self.any() {
             self.to + 1 - self.from
-        } else { 0 }
+        } else {
+            0
+        }
     }
     fn any(&self) -> bool {
         self.to >= self.from
@@ -105,12 +111,6 @@ impl Interval {
     fn restrict_lte(&mut self, value: usize) {
         self.to = self.to.min(value);
     }
-    fn intersect(&self, other: &Self) -> Self {
-        Self {
-            from: max(self.from, other.from),
-            to: min(self.to, other.to),
-        }
-    }
 }
 
 impl Display for Interval {
@@ -119,54 +119,58 @@ impl Display for Interval {
     }
 }
 
-
 type ParameterIntervals = HashMap<u8, Interval>;
 
-fn print_intervals(inters: &ParameterIntervals) {
-    for k in [b'x', b'm', b'a', b's'] {
-        eprint!("{}: {}, ", k as char, inters[&k]);
-    }
-    eprintln!();
+fn get_interval_combos(intervals: &ParameterIntervals) -> usize {
+    intervals.iter().map(|x| x.1.count()).product()
 }
 
-fn get_combos(
+fn get_possible_combination_count(
     workflows: &HashMap<&str, Workflow>,
-    current_combos: ParameterIntervals,
+    current_intervals: ParameterIntervals,
     current_workflow: &str,
 ) -> usize {
     if current_workflow == "A" {
-        return current_combos.iter().map(|x| x.1.count()).product();
+        return get_interval_combos(&current_intervals);
     } else if current_workflow == "R" {
         return 0;
     }
     let workflow = &workflows[current_workflow];
-    let mut combos = current_combos.clone();
+    let mut intervals = current_intervals.clone();
     let mut result = 0;
+    let mut out_of_intervals = false;
     for step in &workflow.steps {
-        match step {
+        let (branch_intervals, parameter, target) = match step {
             WorkflowStep::GreaterThan(parameter, value, target) => {
-                let mut branch_intervals = combos.clone();
-                branch_intervals.get_mut(parameter).unwrap().restrict_gt(*value);
-                if branch_intervals[&parameter].any() {
-                    result += get_combos(workflows, branch_intervals, target);
-                }
-                combos.get_mut(parameter).unwrap().restrict_lte(*value);
+                let mut branch_intervals = intervals.clone();
+                branch_intervals
+                    .get_mut(parameter)
+                    .unwrap()
+                    .restrict_gt(*value);
+                intervals.get_mut(parameter).unwrap().restrict_lte(*value);
+                (branch_intervals, parameter, target)
             }
             WorkflowStep::LessThan(parameter, value, target) => {
-                let mut branch_intervals = combos.clone();
-                branch_intervals.get_mut(parameter).unwrap().restrict_lt(*value);
-                if branch_intervals[&parameter].any() {
-                    result += get_combos(workflows, branch_intervals, target);
-                }
-                combos.get_mut(parameter).unwrap().restrict_gte(*value);
+                let mut branch_intervals = intervals.clone();
+                branch_intervals
+                    .get_mut(parameter)
+                    .unwrap()
+                    .restrict_lt(*value);
+                intervals.get_mut(parameter).unwrap().restrict_gte(*value);
+                (branch_intervals, parameter, target)
             }
+        };
+
+        if branch_intervals[parameter].any() {
+            result += get_possible_combination_count(workflows, branch_intervals, target);
         }
-        if combos.iter().map(|x|x.1.count()).product::<usize>() == 0 {
+        if get_interval_combos(&intervals) == 0 {
+            out_of_intervals = true;
             break;
         }
     }
-    if combos.iter().map(|x|x.1.count()).product::<usize>() != 0 {
-        result += get_combos(workflows, combos, workflow.fallback);
+    if !out_of_intervals {
+        result += get_possible_combination_count(workflows, intervals, workflow.fallback);
     }
     result
 }
@@ -189,10 +193,17 @@ fn main() {
         }
     }
 
-    // print_gv(&workflows_map);
     let from: usize = 1;
     let to: usize = 4000;
-    let gold = get_combos(&workflows_map, HashMap::from([(b'x', Interval { from, to }), (b'm', Interval { from, to }), (b'a', Interval { from, to }), (b's', Interval { from, to })]), "in");
+    let gold = get_possible_combination_count(
+        &workflows_map,
+        "xmas"
+            .as_bytes()
+            .iter()
+            .map(|b| (*b, Interval { from, to }))
+            .collect(),
+        "in",
+    );
 
     println!("silver: {}", silver);
     println!("gold: {}", gold);
