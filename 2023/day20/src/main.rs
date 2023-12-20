@@ -2,22 +2,32 @@
 
 use crate::ModuleType::Conjunction;
 use crate::Pulse::{High, Low};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::hash::{Hash, Hasher};
 use std::io::{stdin, Read};
+use num::integer::lcm;
 use ModuleType::FlipFlop;
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 struct Module<'a> {
     destinations: Vec<&'a str>,
     module_type: ModuleType<'a>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 struct ConjunctionData<'a> {
     source_memory: HashMap<&'a str, bool>,
 }
 
-#[derive(Clone)]
+impl<'a> Hash for ConjunctionData<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut pairs: Vec<_> = self.source_memory.iter().collect();
+        pairs.sort_by_key(|x| x.0);
+        Hash::hash(&pairs, state);
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Hash)]
 enum ModuleType<'a> {
     FlipFlop(bool),
     Conjunction(ConjunctionData<'a>),
@@ -51,26 +61,30 @@ enum Pulse {
     High,
 }
 
-fn silver(modules: &mut HashMap<&str, Module>) -> usize {
+fn silver<'a>(modules: &'a mut HashMap<&'a str, Module<'a>>) -> usize {
     let mut low = 0;
     let mut high = 0;
-    for i in 1..=1000 {
+    let mut i = 0;
+    // nd hf sb ds
+    let mut last_conjs = HashMap::new();
+    loop {
+        i += 1;
         let mut queue = VecDeque::new();
         queue.push_back((Low, "broadcaster", "button"));
         while let Some((pulse, current, from)) = queue.pop_front() {
+            if ["nd", "hf", "sb", "ds"].contains(&from) && matches!(pulse, High) && !last_conjs.contains_key(from) {
+                last_conjs.insert(from, i);
+            }
+            if last_conjs.len() >= 4 {
+                return last_conjs.values().copied().reduce(lcm).unwrap();
+            }
+            if current == "rx" && matches!(pulse, Low) {
+                return i;
+            }
             match pulse {
                 Low => low += 1,
                 High => high += 1,
             }
-            eprintln!(
-                "{} -{} -> {}",
-                from,
-                match pulse {
-                    Low => "low",
-                    High => "high",
-                },
-                current
-            );
             let current_module = match modules.get_mut(current) {
                 Some(cur) => cur,
                 None => {
@@ -150,4 +164,18 @@ fn main() {
     }
     // print_dot(&modules);
     println!("silver: {}", silver(&mut modules));
+    // reset states
+    // for module in modules.values_mut() {
+    //     match &mut module.module_type {
+    //         FlipFlop(val) => {
+    //             *val = false;
+    //         }
+    //         Conjunction(data) => {
+    //             for value in data.source_memory.values_mut() {
+    //                 *value = false;
+    //             }
+    //         }
+    //         ModuleType::None => {}
+    //     }
+    // }
 }
