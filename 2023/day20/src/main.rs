@@ -1,14 +1,10 @@
-#![feature(let_chains)]
-
 use crate::ModuleType::Conjunction;
-use crate::Pulse::{High, Low};
-use std::collections::{BTreeMap, HashMap, VecDeque};
-use std::hash::{Hash, Hasher};
-use std::io::{stdin, Read};
 use num::integer::lcm;
+use std::collections::{HashMap, VecDeque};
+use std::io::{stdin, Read};
 use ModuleType::FlipFlop;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq)]
 struct Module<'a> {
     destinations: Vec<&'a str>,
     module_type: ModuleType<'a>,
@@ -19,109 +15,89 @@ struct ConjunctionData<'a> {
     source_memory: HashMap<&'a str, bool>,
 }
 
-impl<'a> Hash for ConjunctionData<'a> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut pairs: Vec<_> = self.source_memory.iter().collect();
-        pairs.sort_by_key(|x| x.0);
-        Hash::hash(&pairs, state);
-    }
-}
-
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq)]
 enum ModuleType<'a> {
     FlipFlop(bool),
     Conjunction(ConjunctionData<'a>),
     None,
 }
 
-fn print_dot(modules: &HashMap<&str, Module>) {
-    eprintln!("digraph {{");
-    for (name, module) in modules {
-        for modi in &module.destinations {
-            eprintln!("{} -> {}", name, modi);
+type Modules<'a> = HashMap<&'a str, Module<'a>>;
+
+fn press_button<F>(modules: &mut Modules, visitor: &mut F) -> bool
+where
+    F: FnMut((bool, &str, &str)) -> bool,
+{
+    let mut queue = VecDeque::new();
+    queue.push_back((false, "broadcaster", "button"));
+    while let Some((pulse, current, from)) = queue.pop_front() {
+        if visitor((pulse, current, from)) {
+            return true;
         }
-        if let ModuleType::None = module.module_type {
-            eprintln!(
-                "{} [shape={}]",
-                name,
-                match &module.module_type {
-                    FlipFlop(_) => "diamond",
-                    Conjunction(_) => "box",
-                    _ => "",
-                }
-            );
+
+        let current_module = match modules.get_mut(current) {
+            Some(cur) => cur,
+            None => {
+                continue;
+            }
+        };
+
+        if let FlipFlop(val) = current_module.module_type {
+            if pulse {
+                continue;
+            }
+            current_module.module_type = FlipFlop(!val);
+            for destination_module in &current_module.destinations {
+                queue.push_back((!val, destination_module, current))
+            }
+        } else if let Conjunction(data) = &mut current_module.module_type {
+            let current_memory = data.source_memory.get_mut(from).unwrap();
+            *current_memory = pulse;
+            let sent_pulse = !data.source_memory.values().all(|x| *x);
+            for destination_module in &current_module.destinations {
+                queue.push_back((sent_pulse, destination_module, current))
+            }
+        } else {
+            for destination_module in &current_module.destinations {
+                queue.push_back((pulse, destination_module, current));
+            }
         }
     }
-    eprintln!("}}");
+    false
 }
 
-#[derive(Eq, PartialEq, Clone)]
-enum Pulse {
-    Low,
-    High,
-}
-
-fn silver<'a>(modules: &'a mut HashMap<&'a str, Module<'a>>) -> usize {
+fn silver(modules: &mut Modules) -> usize {
     let mut low = 0;
     let mut high = 0;
-    let mut i = 0;
-    // nd hf sb ds
-    let mut last_conjs = HashMap::new();
-    loop {
-        i += 1;
-        let mut queue = VecDeque::new();
-        queue.push_back((Low, "broadcaster", "button"));
-        while let Some((pulse, current, from)) = queue.pop_front() {
-            if ["nd", "hf", "sb", "ds"].contains(&from) && matches!(pulse, High) && !last_conjs.contains_key(from) {
-                last_conjs.insert(from, i);
-            }
-            if last_conjs.len() >= 4 {
-                return last_conjs.values().copied().reduce(lcm).unwrap();
-            }
-            if current == "rx" && matches!(pulse, Low) {
-                return i;
-            }
-            match pulse {
-                Low => low += 1,
-                High => high += 1,
-            }
-            let current_module = match modules.get_mut(current) {
-                Some(cur) => cur,
-                None => {
-                    continue;
-                }
-            };
-
-            if let FlipFlop(val) = current_module.module_type {
-                if let High = pulse {
-                    continue;
-                }
-                current_module.module_type = FlipFlop(!val);
-                for destination_module in &current_module.destinations {
-                    queue.push_back((if val { Low } else { High }, destination_module, current))
-                }
-            } else if let Conjunction(data) = &mut current_module.module_type {
-                let current_memory = data.source_memory.get_mut(from).unwrap();
-                *current_memory = match pulse {
-                    Low => false,
-                    High => true,
-                };
-                let sent_pulse = if data.source_memory.values().all(|x| *x) {
-                    Low
-                } else {
-                    High
-                };
-                for destination_module in &current_module.destinations {
-                    queue.push_back((sent_pulse.clone(), destination_module, current))
-                }
+    for _ in 1..=1000 {
+        press_button(modules, &mut |(pulse, _, _)| {
+            if pulse {
+                high += 1
             } else {
-                for destination_module in &current_module.destinations {
-                    queue.push_back((pulse.clone(), destination_module, current));
-                }
+                low += 1
             }
-        }
+            false
+        });
     }
     low * high
+}
+
+fn gold(modules: &mut Modules) -> usize {
+    let mut prev_conj = HashMap::new();
+    let mut i = 0usize;
+    loop {
+        i += 1;
+        let mut closure = |(pulse, _, from): (bool, &str, &str)| {
+            if ["nd", "hf", "sb", "ds"].contains(&from) && !prev_conj.contains_key(from) && pulse {
+                prev_conj.insert(from.to_string(), i);
+            }
+            prev_conj.len() >= 4
+        };
+        if press_button(modules, &mut closure) {
+            break;
+        }
+    }
+    prev_conj.values().copied().reduce(lcm).unwrap()
 }
 
 fn main() {
@@ -151,7 +127,7 @@ fn main() {
     let modules_copy = modules.clone();
     for (con_name, con_module) in modules
         .iter_mut()
-        .filter(|(k, m)| matches!(m.module_type, Conjunction(_)))
+        .filter(|(_, m)| matches!(m.module_type, Conjunction(_)))
     {
         let sources = modules_copy
             .iter()
@@ -162,20 +138,22 @@ fn main() {
             data.source_memory = sources;
         }
     }
-    // print_dot(&modules);
     println!("silver: {}", silver(&mut modules));
-    // reset states
-    // for module in modules.values_mut() {
-    //     match &mut module.module_type {
-    //         FlipFlop(val) => {
-    //             *val = false;
-    //         }
-    //         Conjunction(data) => {
-    //             for value in data.source_memory.values_mut() {
-    //                 *value = false;
-    //             }
-    //         }
-    //         ModuleType::None => {}
-    //     }
-    // }
+
+    // reset state
+    for module in modules.values_mut() {
+        match &mut module.module_type {
+            FlipFlop(val) => {
+                *val = false;
+            }
+            Conjunction(data) => {
+                for value in data.source_memory.values_mut() {
+                    *value = false;
+                }
+            }
+            ModuleType::None => {}
+        }
+    }
+
+    println!("gold: {}", gold(&mut modules));
 }
