@@ -83,12 +83,23 @@ fn silver(modules: &mut Modules) -> usize {
 }
 
 fn gold(modules: &mut Modules) -> usize {
+    let target_module = "rx";
+    let (final_module, _) = modules
+        .iter()
+        .find(|(_, x)| x.destinations.contains(&target_module))
+        .unwrap();
+    let cycled_modules: Vec<_> = modules
+        .iter()
+        .filter(|(_, x)| x.destinations == [*final_module])
+        .map(|(k, _)| *k)
+        .collect();
+
     let mut prev_conj = HashMap::new();
     let mut i = 0usize;
     loop {
         i += 1;
         let mut closure = |(pulse, _, from): (bool, &str, &str)| {
-            if ["nd", "hf", "sb", "ds"].contains(&from) && !prev_conj.contains_key(from) && pulse {
+            if cycled_modules.contains(&from) && !prev_conj.contains_key(from) && pulse {
                 prev_conj.insert(from.to_string(), i);
             }
             prev_conj.len() >= 4
