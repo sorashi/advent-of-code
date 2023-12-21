@@ -31,12 +31,12 @@ fn main() {
         }
     }
 
-    let mut possibilites: HashSet<Vector> = HashSet::new();
-    possibilites.insert(starting_position);
+    let mut possibilities: HashSet<Vector> = HashSet::new();
+    possibilities.insert(starting_position);
     let directions = [Vector::LEFT, Vector::RIGHT, Vector::UP, Vector::DOWN];
     for _ in 1..=64 {
         let mut new_possibilities: HashSet<Vector> = HashSet::new();
-        for possibility in &possibilites {
+        for possibility in &possibilities {
             for direction in directions {
                 let new_pos = *possibility + direction;
                 if new_pos.x >= 0
@@ -49,7 +49,7 @@ fn main() {
                 }
             }
         }
-        possibilites = new_possibilities;
+        possibilities = new_possibilities;
     }
-    println!("silver: {}", possibilites.len());
+    println!("silver: {}", possibilities.len());
 }
