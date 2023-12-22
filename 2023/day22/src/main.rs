@@ -61,20 +61,6 @@ impl Box {
     fn floor(&self) -> usize {
         self.from.z.min(self.to.z)
     }
-    fn roof_mut(&mut self) -> &mut usize {
-        if self.from.z <= self.to.z {
-            return &mut self.to.z;
-        } else {
-            return &mut self.from.z;
-        }
-    }
-    fn floor_mut(&mut self) -> &mut usize {
-        if self.from.z <= self.to.z {
-            return &mut self.from.z;
-        } else {
-            return &mut self.to.z;
-        }
-    }
 }
 
 fn parse_vector(s: &str) -> Vector3 {
@@ -119,13 +105,6 @@ fn main() {
     }
 
     bricks.sort_by_key(|x| x.from.min(x.to));
-
-    for brick in &bricks {
-        eprintln!(
-            "{} {} {} ~ {} {} {}",
-            brick.from.x, brick.from.y, brick.from.z, brick.to.x, brick.to.y, brick.to.z
-        )
-    }
 
     let mut brick_supports: HashMap<usize, HashSet<usize>> = HashMap::new();
     let mut brick_supported_by: HashMap<usize, HashSet<usize>> = HashMap::new();
