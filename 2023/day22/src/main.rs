@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     io::stdin,
 };
 
@@ -149,5 +149,32 @@ fn main() {
             silver += 1;
         }
     }
+
     println!("silver: {}", silver);
+
+    let mut gold = 0;
+    for i in 0..bricks.len() {
+        let mut queue: VecDeque<usize> = VecDeque::new();
+        queue.push_back(i);
+        let mut falling: HashSet<usize> = HashSet::new();
+        falling.insert(i);
+        while let Some(current) = queue.pop_front() {
+            for other in brick_supports
+                .get(&current)
+                .unwrap_or(&HashSet::new())
+                .iter()
+                .filter(|d| {
+                    brick_supported_by[d].len() > 0
+                        && brick_supported_by[d].iter().all(|x| falling.contains(x))
+                })
+                .collect::<Vec<_>>()
+            {
+                queue.push_back(*other);
+                falling.insert(*other);
+            }
+        }
+        gold += falling.len() - 1;
+    }
+
+    println!("gold: {}", gold);
 }
