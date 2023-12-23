@@ -64,7 +64,7 @@ impl Vector {
     pub fn get<'a, T, A: AsRef<[T]>>(&self, array: &'a [A]) -> Option<&'a T> {
         array
             .get(self.y as usize)
-            .and_then(|row| row.as_ref().get(self.y as usize))
+            .and_then(|row| row.as_ref().get(self.x as usize))
     }
     pub fn set<T, A: AsMut<[T]>>(&self, array: &mut [A], value: T) -> Result<(), &'static str> {
         let element = array
