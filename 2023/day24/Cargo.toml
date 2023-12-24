@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 itertools = "0.12.0"
 num = "0.4.1"
+z3 = { version = "0.12.1", features = ["num", "arbitrary-size-numeral"] }

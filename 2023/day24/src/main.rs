@@ -5,6 +5,10 @@ use std::{
     io::{stdin, Read},
     ops::{Add, Mul},
 };
+use z3::{
+    ast::{Ast, Int},
+    Config, Context, Solver,
+};
 
 #[derive(Clone, Debug)]
 struct Vector3 {
@@ -120,4 +124,42 @@ fn main() {
         }
     }
     println!("silver: {}", silver);
+
+    let cfg = Config::new();
+    let ctx = Context::new(&cfg);
+    let solver = Solver::new(&ctx);
+
+    let prx = Int::new_const(&ctx, "prx");
+    let pry = Int::new_const(&ctx, "pry");
+    let prz = Int::new_const(&ctx, "prz");
+    let vrx = Int::new_const(&ctx, "vrx");
+    let vry = Int::new_const(&ctx, "vry");
+    let vrz = Int::new_const(&ctx, "vrz");
+
+    for hailstone in hailstones {
+        let px = Int::from_big_int(&ctx, &hailstone.pos.x.to_integer());
+        let py = Int::from_big_int(&ctx, &hailstone.pos.y.to_integer());
+        let pz = Int::from_big_int(&ctx, &hailstone.pos.z.to_integer());
+        let vx = Int::from_big_int(&ctx, &hailstone.vel.x.to_integer());
+        let vy = Int::from_big_int(&ctx, &hailstone.vel.y.to_integer());
+        let vz = Int::from_big_int(&ctx, &hailstone.vel.z.to_integer());
+
+        let eq1 = ((&prx - px) * (&vy - &vry))._eq(&((&pry - &py) * (vx - &vrx)));
+        let eq2 = ((&pry - py) * (vz - &vrz))._eq(&((&prz - pz) * (vy - &vry)));
+        solver.assert(&eq1);
+        solver.assert(&eq2);
+    }
+
+    let result = solver.check();
+    assert!(matches!(result, z3::SatResult::Sat));
+    let model = solver.get_model().unwrap();
+    let prx = model.get_const_interp(&prx).unwrap();
+    let pry = model.get_const_interp(&pry).unwrap();
+    let prz = model.get_const_interp(&prz).unwrap();
+    let prx: BigInt = prx.to_string().parse().unwrap();
+    let pry: BigInt = pry.to_string().parse().unwrap();
+    let prz: BigInt = prz.to_string().parse().unwrap();
+    let gold = prx + pry + prz;
+
+    println!("gold: {}", gold);
 }
