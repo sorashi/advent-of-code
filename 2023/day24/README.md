@@ -1,10 +1,10 @@
 # day24
 
-There is probably a solution using linear algebra, but I got fed up while looking for it and used a SAT solver instead (Z3).
+There is probably a solution using linear algebra, but I got fed up while looking for it and used an SAT solver instead ([Z3](https://microsoft.github.io/z3guide/)).
 
-| description | download | CRC32    | size  | lines | silver | gold            | CCM [ms]        | WCM [ms]        |
-| ----------- | -------- | -------- | ----- | ----- | ------ | --------------- | --------------- | --------------- |
-| input.txt   | -        | C4B27154 | 19KiB | 300   | 11246  | 716599937560103 | 1718.19 ± 64.10 | 1646.40 ± 62.70 |
+| description | download | CRC32    | size  | lines | silver | gold            | CCM [ms]       | WCM [ms]       |
+| ----------- | -------- | -------- | ----- | ----- | ------ | --------------- | -------------- | -------------- |
+| input.txt   | -        | C4B27154 | 19KiB | 300   | 11246  | 716599937560103 | 750.76 ± 20.80 | 734.42 ± 26.92 |
 
 - CCM = Cold-Cache Mean
 - WCM = Warm-Cache Mean
