@@ -6,14 +6,13 @@ fn main() {
     let mut gold = 0;
     for line in stdin().lines() {
         let line = line.unwrap();
-        let mut amount = line[1..].parse::<i32>().unwrap();
+        let amount = line[1..].parse::<i32>().unwrap();
+        let prev_pos = position;
         match &line[0..1] {
-            "L" => amount = -amount,
-            "R" => (),
+            "L" => position -= amount,
+            "R" => position += amount,
             _ => unreachable!(),
         }
-        let prev_pos = position;
-        position += amount;
         if prev_pos > 0 && position < 0 || prev_pos < 0 && position > 0 {
             gold += 1;
         }
