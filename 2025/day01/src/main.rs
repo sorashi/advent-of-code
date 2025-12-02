@@ -6,7 +6,7 @@ fn main() {
     let mut gold = 0;
     for line in stdin().lines() {
         let line = line.unwrap();
-        let amount = line[1..].parse::<i32>().unwrap();
+        let amount = line[1..].parse::<i128>().unwrap();
         let prev_pos = position;
         match &line[0..1] {
             "L" => position -= amount,
