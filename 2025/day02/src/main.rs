@@ -9,49 +9,31 @@ fn main() {
     let mut gold = 0;
     for id_pair in inp.trim().split(',') {
         let (start, end) = id_pair.split_once('-').unwrap();
-        silver += silver_one(start, end);
-        gold += gold_one(start, end);
+        let mut current = 1;
+        let start = start.parse::<N>().unwrap();
+        let end = end.parse::<N>().unwrap();
+        let mut gold_added = HashSet::<N>::default();
+        while repeat_num(current, 2) <= end {
+            for i in 2.. {
+                let current_repeat = repeat_num(current, i);
+                if current_repeat > end {
+                    break;
+                }
+                if current_repeat >= start && current_repeat <= end {
+                    if !gold_added.contains(&current_repeat) {
+                        gold += current_repeat;
+                        gold_added.insert(current_repeat);
+                    }
+                    if i == 2 {
+                        silver += current_repeat;
+                    }
+                }
+            }
+            current += 1;
+        }
     }
     println!("silver: {silver}");
     println!("gold: {gold}");
-}
-
-fn silver_one(start: &str, end: &str) -> N {
-    let mut silver = 0;
-    let mut current = start.split_at(start.len() / 2).0.parse::<N>().unwrap_or(1);
-    let start = start.parse::<N>().unwrap();
-    let end = end.parse::<N>().unwrap();
-    while repeat_num(current, 2) < start {
-        current += 1;
-    }
-    while repeat_num(current, 2) <= end {
-        silver += repeat_num(current, 2);
-        current += 1;
-    }
-    silver
-}
-fn gold_one(start: &str, end: &str) -> N {
-    let mut gold = 0;
-    let start = start.parse::<N>().unwrap();
-    let end = end.parse::<N>().unwrap();
-    let mut current = 1;
-    let mut added = HashSet::<N>::new();
-    while repeat_num(current, 2) <= end {
-        for i in 2.. {
-            if repeat_num(current, i) > end {
-                break;
-            }
-            if repeat_num(current, i) >= start
-                && repeat_num(current, i) <= end
-                && !added.contains(&repeat_num(current, i))
-            {
-                gold += repeat_num(current, i);
-                added.insert(repeat_num(current, i));
-            }
-        }
-        current += 1;
-    }
-    gold
 }
 
 fn repeat_num(num: N, times: u32) -> N {
