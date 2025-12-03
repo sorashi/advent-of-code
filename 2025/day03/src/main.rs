@@ -8,7 +8,7 @@ fn main() {
         let (i, v) = bts[..bts.len() - 1]
             .iter()
             .enumerate()
-            .max_by_key(|(_, val)| *val)
+            .min_by_key(|(_, val)| -(**val as i32))
             .unwrap();
         let v = *v;
         let v2 = bts[i + 1..].iter().max().unwrap();
@@ -16,7 +16,6 @@ fn main() {
         assert!(v.is_ascii_digit());
         assert!(v2.is_ascii_digit());
         let res = (v - b'0') as u32 * 10 + (v2 - b'0') as u32;
-        println!("{}", res);
         silver += res;
     }
     println!("silver: {}", silver);
