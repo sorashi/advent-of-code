@@ -1,4 +1,4 @@
-use std::{io::stdin, ops::RangeBounds};
+use std::io::stdin;
 
 fn main() {
     let mut intervals = vec![];
@@ -20,5 +20,16 @@ fn main() {
             silver += 1;
         }
     }
+    intervals.sort_by_key(|interval| (*interval.start(), *interval.end()));
+    let mut gold = 0;
+    let mut last = *intervals[0].start();
+    for interval in intervals {
+        last = last.max(*interval.start());
+        if last <= *interval.end() + 1 {
+            gold += interval.end() + 1 - last;
+        }
+        last = (*interval.end() + 1).max(last);
+    }
     println!("silver: {silver}");
+    println!("gold: {gold}");
 }
