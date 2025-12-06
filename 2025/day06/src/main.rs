@@ -1,5 +1,21 @@
 use std::io::stdin;
 
+fn get_initial(op: u8) -> u64 {
+    match op {
+        b'+' => 0,
+        b'*' => 1,
+        _ => unreachable!(),
+    }
+}
+
+fn apply_op(current: u64, op: u8, num: u64) -> u64 {
+    match op {
+        b'+' => current + num,
+        b'*' => current * num,
+        _ => unreachable!(),
+    }
+}
+
 fn gold(lines: &[String]) -> u64 {
     let ops = lines.last().unwrap().as_bytes();
     let mut result = 0;
@@ -12,31 +28,25 @@ fn gold(lines: &[String]) -> u64 {
         let range = start..i;
         let op = ops[range.start];
 
-        let mut local_result = match op {
-            b'+' => 0,
-            b'*' => 1,
-            _ => unreachable!(),
-        };
-        for i in range {
-            let mut num = 0;
-            for j in 0..lines.len() - 1 {
-                let b = lines[j].as_bytes()[i];
-                if b == b' ' {
-                    continue;
-                }
-                num = 10 * num + (b - b'0') as u64;
-            }
+        result += range.fold(get_initial(op), |acc, c| {
+            let num = lines
+                .iter()
+                .take(lines.len() - 1)
+                .map(|l| l.as_bytes()[c])
+                .fold(0, |num, b| {
+                    if b == b' ' {
+                        num
+                    } else {
+                        10 * num + (b - b'0') as u64
+                    }
+                });
             if num == 0 {
-                continue;
+                acc
+            } else {
+                apply_op(acc, op, num)
             }
-            local_result = match op {
-                b'+' => local_result + num,
-                b'*' => local_result * num,
-                _ => unreachable!(),
-            };
-        }
+        });
         start = i;
-        result += local_result;
     }
     result
 }
@@ -50,20 +60,14 @@ fn main() {
     }
     let mut silver = 0;
     for (i, op) in hw.last().unwrap().iter().enumerate() {
-        let mut res = match *op {
-            "+" => 0,
-            "*" => 1,
-            _ => unreachable!(),
-        };
-        for num in hw[0..hw.len() - 1].iter().map(|r| r[i]) {
-            let num = num.parse::<u64>().unwrap();
-            res = match *op {
-                "+" => res + num,
-                "*" => res * num,
-                _ => unreachable!(),
-            };
-        }
-        silver += res;
+        let op = op.as_bytes()[0];
+        silver += hw[0..hw.len() - 1]
+            .iter()
+            .map(|r| r[i])
+            .fold(get_initial(op), |acc, c| {
+                let num = c.parse::<u64>().unwrap();
+                apply_op(acc, op, num)
+            });
     }
     println!("silver: {}", silver);
     println!("gold: {}", gold(&lines));
