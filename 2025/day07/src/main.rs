@@ -1,26 +1,27 @@
-use std::{io::stdin, iter};
+use std::io::stdin;
 
 fn main() {
     let mut silver = 0;
-    let mut hs = vec![];
+    let mut state = vec![];
     for line in stdin().lines() {
         let line = line.unwrap();
-        if hs.len() == 0 {
-            hs.reserve(line.len());
-            hs.extend(iter::repeat_n(0u64, line.len()));
+        if state.is_empty() {
+            state.resize(line.len(), 0u64);
         }
         for (i, c) in line.as_bytes().iter().enumerate() {
             match *c {
                 b'S' => {
-                    hs[i] = 1;
+                    state[i] = 1;
                 }
                 b'^' => {
-                    if hs[i] > 0 {
+                    if state[i] > 0 {
+                        // to be more general, we should save the changes to distribute at the end
+                        // of this level, but this solution works
                         silver += 1;
-                        let timelines = hs[i];
-                        hs[i] = 0;
-                        hs[i - 1] += timelines;
-                        hs[i + 1] += timelines;
+                        let timelines = state[i];
+                        state[i] = 0;
+                        state[i - 1] += timelines;
+                        state[i + 1] += timelines;
                     }
                 }
                 _ => continue,
@@ -28,5 +29,5 @@ fn main() {
         }
     }
     println!("silver: {}", silver);
-    println!("gold: {}", hs.iter().sum::<u64>());
+    println!("gold: {}", state.iter().sum::<u64>());
 }
