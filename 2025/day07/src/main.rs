@@ -1,21 +1,26 @@
-use std::{collections::HashSet, io::stdin};
+use std::{io::stdin, iter};
 
 fn main() {
     let mut silver = 0;
-    let mut hs = HashSet::new();
+    let mut hs = vec![];
     for line in stdin().lines() {
         let line = line.unwrap();
+        if hs.len() == 0 {
+            hs.reserve(line.len());
+            hs.extend(iter::repeat_n(0u64, line.len()));
+        }
         for (i, c) in line.as_bytes().iter().enumerate() {
             match *c {
                 b'S' => {
-                    hs.insert(i);
+                    hs[i] = 1;
                 }
                 b'^' => {
-                    if hs.contains(&i) {
-                        hs.remove(&i);
+                    if hs[i] > 0 {
                         silver += 1;
-                        hs.insert(i - 1);
-                        hs.insert(i + 1);
+                        let timelines = hs[i];
+                        hs[i] = 0;
+                        hs[i - 1] += timelines;
+                        hs[i + 1] += timelines;
                     }
                 }
                 _ => continue,
@@ -23,4 +28,5 @@ fn main() {
         }
     }
     println!("silver: {}", silver);
+    println!("gold: {}", hs.iter().sum::<u64>());
 }
