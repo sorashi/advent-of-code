@@ -1,6 +1,4 @@
-use std::{collections::HashSet, fmt::Display, io::stdin};
-
-use itertools::Itertools;
+use std::{collections::HashMap, io::stdin};
 
 #[derive(Debug, PartialEq, Eq)]
 struct Jbox {
@@ -19,49 +17,57 @@ impl Jbox {
             .sqrt()
     }
 }
-impl Display for Jbox {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{},{})", self.x, self.y, self.z)
+
+struct UnionFind {
+    colors: Vec<usize>,
+}
+impl UnionFind {
+    fn new(n: usize) -> Self {
+        Self {
+            colors: (0..n).collect(),
+        }
+    }
+    fn union(&mut self, i: usize, j: usize) {
+        let color = self.colors[i];
+        let other_color = self.colors[j];
+        for c in self.colors.iter_mut() {
+            if *c == other_color {
+                *c = color;
+            }
+        }
+    }
+    fn find(&self, i: usize, j: usize) -> bool {
+        self.colors[i] == self.colors[j]
+    }
+    fn silver(&self) -> u64 {
+        let mut hm = HashMap::<usize, usize>::new();
+        for color in &self.colors {
+            let cnt = hm.entry(*color).or_default();
+            *cnt += 1;
+        }
+        let mut vals: Vec<_> = hm.into_values().collect();
+        vals.sort_unstable_by(|a, b| b.cmp(a));
+        vals.into_iter().take(3).map(|v| v as u64).product()
     }
 }
 
 fn solve(boxes: &[Jbox], silver_take: usize) -> (u64, u64) {
-    let mut colors = (0..boxes.len()).collect::<Vec<usize>>();
-    let mut pair_finder = PairFinder::new(&boxes);
-    for (i, j) in (&mut pair_finder).take(silver_take) {
-        let color = colors[i];
-        let other_color = colors[j];
-        for k in colors.iter_mut() {
-            if *k == other_color {
-                *k = color;
-            }
+    let mut uf = UnionFind::new(boxes.len());
+    let edges = get_edges(boxes);
+    for (i, j) in &edges[0..silver_take] {
+        if !uf.find(*i, *j) {
+            uf.union(*i, *j);
         }
     }
-    let groups = colors
-        .iter()
-        .into_grouping_map_by(|c| *c)
-        .fold(0u64, |acc, _key, _val| acc + 1);
-    let silver = groups
-        .values()
-        .sorted_unstable()
-        .rev()
-        .take(3)
-        .product::<u64>();
-    let gold;
-    loop {
-        let (i, j) = pair_finder.next().unwrap();
-        let color = colors[i];
-        let other_color = colors[j];
-        for k in colors.iter_mut() {
-            if *k == other_color {
-                *k = color;
-            }
-        }
-        if colors.iter().all(|c| *c == color) {
-            gold = boxes[i].x * boxes[j].x;
-            break;
+    let silver = uf.silver();
+    let mut last_union = (0, 0);
+    for (i, j) in &edges[silver_take..] {
+        if !uf.find(*i, *j) {
+            uf.union(*i, *j);
+            last_union = (*i, *j);
         }
     }
+    let gold = boxes[last_union.0].x * boxes[last_union.1].x;
     (silver, gold)
 }
 
@@ -80,44 +86,19 @@ fn main() {
     println!("gold: {gold}");
 }
 
-struct PairFinder<'a> {
-    returned: HashSet<(usize, usize)>,
-    boxes: &'a [Jbox],
-}
-impl<'a> PairFinder<'a> {
-    fn new(boxes: &'a [Jbox]) -> Self {
-        PairFinder {
-            returned: HashSet::new(),
-            boxes,
+fn get_edges(boxes: &[Jbox]) -> Vec<(usize, usize)> {
+    let mut edges = Vec::with_capacity(boxes.len() * (boxes.len() - 1) / 2);
+    for i in 0..boxes.len() {
+        for j in i + 1..boxes.len() {
+            edges.push((i, j));
         }
     }
-}
-impl<'a> Iterator for PairFinder<'a> {
-    type Item = (usize, usize);
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut found = false;
-        let mut min_dist = f32::INFINITY;
-        let mut pair = (0, 0);
-        for i in 0..self.boxes.len() {
-            for j in i + 1..self.boxes.len() {
-                if self.returned.contains(&(i, j)) {
-                    continue;
-                }
-                let cur_dist = self.boxes[i].dist(&self.boxes[j]);
-                if cur_dist < min_dist {
-                    min_dist = cur_dist;
-                    pair = (i, j);
-                    found = true;
-                }
-            }
-        }
-        if found {
-            self.returned.insert(pair);
-            Some(pair)
-        } else {
-            None
-        }
-    }
+    edges.sort_unstable_by(|a, b| {
+        let dist1 = boxes[a.0].dist(&boxes[a.1]);
+        let dist2 = boxes[b.0].dist(&boxes[b.1]);
+        dist1.partial_cmp(&dist2).unwrap()
+    });
+    edges
 }
 
 #[cfg(test)]
@@ -148,12 +129,11 @@ mod tests {
         ]
     }
     #[test]
-    fn test_pairfinder() {
+    fn test_edges() {
         let boxes = get_example_boxes();
-        let mut pair_finder = PairFinder::new(&boxes);
-        let iter = &mut pair_finder;
+        let edges = get_edges(&boxes);
 
-        let pair = iter.next().unwrap();
+        let pair = edges[0];
         let box1 = &boxes[pair.0];
         let box2 = &boxes[pair.1];
         let box1_expected = Jbox::new(162, 817, 812);
@@ -161,7 +141,7 @@ mod tests {
         assert!(box1 == &box1_expected || box1 == &box2_expected);
         assert!(box2 == &box1_expected || box2 == &box2_expected);
 
-        let pair = iter.next().unwrap();
+        let pair = edges[1];
         let box1 = &boxes[pair.0];
         let box2 = &boxes[pair.1];
         let box1_expected = Jbox::new(162, 817, 812);
