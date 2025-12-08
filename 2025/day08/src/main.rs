@@ -37,8 +37,8 @@ fn main() {
         });
     }
     let mut colors = (0..boxes.len()).collect::<Vec<usize>>();
-    let pair_finder = PairFinder::new(&boxes);
-    for (i, j) in pair_finder.take(1000) {
+    let mut pair_finder = PairFinder::new(&boxes);
+    for (i, j) in (&mut pair_finder).take(1000) {
         println!(
             "{i} {j} | {} {} {}",
             boxes[i],
@@ -54,7 +54,7 @@ fn main() {
         }
     }
     let groups = colors
-        .into_iter()
+        .iter()
         .into_grouping_map_by(|c| *c)
         .fold(0u64, |acc, _key, _val| acc + 1);
     for (k, v) in groups.iter().sorted_unstable_by_key(|(_, v)| **v).rev() {
@@ -66,6 +66,20 @@ fn main() {
         .rev()
         .take(3)
         .product::<u64>();
+    loop {
+        let (i, j) = pair_finder.next().unwrap();
+        let color = colors[i];
+        let other_color = colors[j];
+        for k in colors.iter_mut() {
+            if *k == other_color {
+                *k = color;
+            }
+        }
+        if colors.iter().all(|c| *c == color) {
+            println!("{} {}", boxes[i].x, boxes[j].x);
+            break;
+        }
+    }
     println!("silver: {}", silver);
 }
 
