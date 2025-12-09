@@ -1,26 +1,18 @@
-use std::{
-    fmt::{Display, Formatter},
-    io::stdin,
-};
+use std::io::stdin;
 
 #[derive(Copy, Clone)]
 struct Vector {
-    x: isize,
-    y: isize,
+    x: usize,
+    y: usize,
 }
 impl Vector {
-    fn new(x: isize, y: isize) -> Self {
+    fn new(x: usize, y: usize) -> Self {
         Vector { x, y }
     }
     fn area_between(&self, other: &Vector) -> usize {
         let width = self.x.abs_diff(other.x) + 1;
         let height = self.y.abs_diff(other.y) + 1;
         width * height
-    }
-}
-impl Display for Vector {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{})", self.x, self.y)
     }
 }
 fn line_intersects_rect_interior(p1: &Vector, p2: &Vector, r1: &Vector, r2: &Vector) -> bool {
@@ -68,10 +60,8 @@ fn is_point_in_rectilinear(px: f64, py: f64, poly: &[Vector]) -> bool {
             // vertical line
             let line_top = v1.y.min(v2.y) as f64;
             let line_bottom = v1.y.max(v2.y) as f64;
-            if line_top < py && py < line_bottom {
-                if (v1.x as f64) > px {
-                    inside = !inside;
-                }
+            if line_top < py && py < line_bottom && (v1.x as f64) > px {
+                inside = !inside;
             }
         }
     }
@@ -102,8 +92,8 @@ fn main() {
     for line in stdin().lines() {
         let line = line.unwrap();
         let (x, y) = line.split_once(',').unwrap();
-        let x = x.parse::<isize>().unwrap();
-        let y = y.parse::<isize>().unwrap();
+        let x = x.parse().unwrap();
+        let y = y.parse().unwrap();
         v.push(Vector::new(x, y));
     }
     let mut silver = 0;
@@ -116,7 +106,6 @@ fn main() {
             let inside = is_rect_in_rectilinear(&v[i], &v[j], &v);
             if inside {
                 gold = gold.max(area);
-                println!("{} {} {}", v[i], v[j], area)
             }
         }
     }
